@@ -1,0 +1,9 @@
+{
+    "name":        "hprose-d",
+    "description": "Hprose for D.",
+    "authors":     ["Ma Bingyao"],
+    "homepage":    "https://github.com/hprose/hprose-d",
+    "license":     "MIT",
+    "copyright":   "Copyright (c) 2014 http://hprose.com",
+    "targetType":  "library"
+}
