@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer library for D.                           *
  *                                                        *
- * LastModified: Aug 4, 2014                              *
+ * LastModified: Aug 6, 2014                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -110,8 +110,8 @@ unittest {
 class Writer {
     private BytesIO _bytes;
     private WriterRefer _refer;
-    private int[string] classref;
-    private int crcount = 0;
+    private int[string] _classref;
+    private int _crcount = 0;
     this(BytesIO bytes, bool simple = false) {
         _bytes = bytes;
         if (simple) {
@@ -123,8 +123,8 @@ class Writer {
     }
     void reset() {
         _refer.reset();
-        classref = null;
-        crcount = 0;
+        _classref = null;
+        _crcount = 0;
     }
     void serialize(T)(ref T value) if (isStaticArray!(T)) {
         serialize(value[0 .. $]);
@@ -505,13 +505,13 @@ class Writer {
             writeString(f);
         }
         _bytes.write(TagClosebrace);
-        int index = crcount++;
-        classref[name] = index;
+        int index = _crcount++;
+        _classref[name] = index;
         return index;
     }
     void writeObject(T)(T value) if (is(T == struct) || is(T == class)) {
         string name = ClassManager.getAlias!(T);
-        int index = classref.get(name, writeClass!(T)(name));
+        int index = _classref.get(name, writeClass!(T)(name));
         static if (is(T == struct)) {
             _refer.set(null);
         }

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose bytes io library for D.                         *
  *                                                        *
- * LastModified: Aug 1, 2014                              *
+ * LastModified: Aug 6, 2014                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -32,7 +32,6 @@ import std.string;
 class BytesIO {
     private ubyte[] _buffer;
     private int _pos;
-    private int _mark;
     this() {
         this("");
     }
@@ -48,18 +47,21 @@ class BytesIO {
     void init(ubyte[] data) {
         _buffer = data;
         _pos = 0;
-        _mark = -1;
     }
     void close() {
         _buffer.length = 0;
         _pos = 0;
-        _mark = -1;
     }
     @property int size() {
         return _buffer.length;
     }
-    int read() {
-        return (size > _pos) ? _buffer[_pos++] : -1;
+    ubyte read() {
+        if (size > _pos) {
+            return _buffer[_pos++];
+        }
+        else {
+            throw new Exception("No byte found in stream");
+        }
     }
     ubyte[] read(int n) {
         ubyte[] bytes = _buffer[_pos .. _pos + n];
@@ -71,22 +73,50 @@ class BytesIO {
         _pos = size;
         return bytes;
     }
-    ubyte[] readUntil(char tag) {
-        int count = countUntil(_buffer[_pos .. $], cast(ubyte)tag);
+    ubyte[] readUntil(T...)(T tag) {
+        int count = countUntil(_buffer[_pos .. $], tag);
         if (count < 0) return readFull();
         ubyte[] bytes = _buffer[_pos .. _pos + count];
         _pos += count + 1;
         return bytes;
     }
+    string readUTF8Char() {
+        int pos = _pos;
+        ubyte tag = read();
+        switch (tag >> 4) {
+            case 0: .. case 7: break;
+            case 12, 13: ++_pos; break;
+            case 14: _pos += 2; break;
+            default: throw new Exception("bad utf-8 encoding");
+        }
+        if (_pos > size) throw new Exception("bad utf-8 encoding"); 
+        return cast(string)_buffer[pos .. _pos];
+    }
+    string readString(int wlen) {
+        int len = 0;
+        int pos = _pos;
+        for (int i = 0; i < wlen; ++i) {
+            ubyte tag = read();
+            switch (tag >> 4) {
+                case 0: .. case 7: break;
+                case 12, 13: ++_pos; break;
+                case 14: _pos += 2; break;
+                case 15: _pos += 3; ++i; break;
+                default: throw new Exception("bad utf-8 encoding");
+            }
+        }
+        if (_pos > size) throw new Exception("bad utf-8 encoding"); 
+        return cast(string)_buffer[pos .. _pos];
+    }
     int readInt(char tag) {
         int c = read();
-        if (c == -1 || c == tag) return 0;
+        if (c == tag) return 0;
         int result = 0;
         int len = size;
         int sign = 1;
         switch (c) {
-            case TagNeg: sign = -1; // no break here
-            case TagPos: c = read();
+            case TagNeg: sign = -1; goto case TagPos;
+            case TagPos: c = read(); goto default;
             default: break;
         }
         while (_pos < len && c != tag) {
@@ -95,15 +125,6 @@ class BytesIO {
             c = read();
         }
         return result;
-    }
-    void mark() {
-        _mark = _pos;
-    }
-    void unmark() {
-        _mark = -1;
-    }
-    void reset() {
-        if (_mark != -1) _pos = _mark;
     }
     void skip(int n) {
         _pos += n;
@@ -162,5 +183,8 @@ unittest {
     assert(bytes.readUntil(';') == "3.141592653589793");
     const real r = 3.141592653589793238;
     bytes.write(r).write(';');
-    assert(bytes.readUntil(';') == "3.141592653589793");
+    assert(bytes.readUntil(';', '.') == "3");
+    assert(bytes.readUntil(';', '.') == "141592653589793");
+    bytes.write("你好啊");
+    assert(bytes.readString(3) == "你好啊");
 }
