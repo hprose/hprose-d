@@ -13,7 +13,7 @@
  *                                                        *
  * hprose common library for D.                           *
  *                                                        *
- * LastModified: Aug 1, 2014                              *
+ * LastModified: Aug 15, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -31,21 +31,22 @@ enum ResultMode {
 }
 
 template isSerializable(T) {
-    static if (is(T == typeof(null)) ||
-               isBasicType!(T) ||
-               isSomeString!(T) ||
-               is(T == struct)) {
+    alias U = Unqual!T;
+    static if (is(U == typeof(null)) ||
+               isBasicType!(U) ||
+               isSomeString!(U) ||
+               is(U == struct)) {
         enum isSerializable = true;
     }
-    else static if (is(T == class) && !isAbstractClass!(T)
-                    && __traits(compiles, { new T; })) {
+    else static if (is(U == class) && !isAbstractClass!(U)
+                    && __traits(compiles, { new U; })) {
         enum isSerializable = true;
     }
-    else static if (isArray!(T)) {
-        enum isSerializable = isSerializable!(Unqual!(ForeachType!(T)));
+    else static if (isArray!(U)) {
+        enum isSerializable = isSerializable!(ForeachType!(U));
     }
-    else static if (isAssociativeArray!(T)) {
-        enum isSerializable = isSerializable!(Unqual!(KeyType!(T))) && isSerializable!(Unqual!(ValueType!(T)));
+    else static if (isAssociativeArray!(U)) {
+        enum isSerializable = isSerializable!(KeyType!(U)) && isSerializable!(ValueType!(U));
     }
     else {
         enum isSerializable = false;

@@ -60,7 +60,7 @@ class BytesIO {
             return _buffer[_pos++];
         }
         else {
-            throw new Exception("No byte found in stream");
+            throw new Exception("no byte found in stream");
         }
     }
     ubyte[] read(int n) {
@@ -73,12 +73,19 @@ class BytesIO {
         _pos = size;
         return bytes;
     }
-    ubyte[] readUntil(T...)(T tag) {
-        int count = countUntil(_buffer[_pos .. $], tag);
+    ubyte[] readUntil(T...)(T tags) {
+        int count = countUntil(_buffer[_pos .. $], tags);
         if (count < 0) return readFull();
         ubyte[] bytes = _buffer[_pos .. _pos + count];
         _pos += count + 1;
         return bytes;
+    }
+    ubyte skipUntil(T...)(T tags) {
+        int count = countUntil(_buffer[_pos .. $], tags);
+        if (count < 0) throw new Exception("does not find tags in stream");
+        ubyte result = _buffer[_pos + count];
+        _pos += count + 1;
+        return result;
     }
     string readUTF8Char() {
         int pos = _pos;
@@ -184,7 +191,7 @@ unittest {
     const real r = 3.141592653589793238;
     bytes.write(r).write(';');
     assert(bytes.readUntil(';', '.') == "3");
-    assert(bytes.readUntil(';', '.') == "141592653589793");
+    assert(bytes.skipUntil(';', '.') == ';');
     bytes.write("你好啊");
     assert(bytes.readString(3) == "你好啊");
 }
