@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer library for D.                           *
  *                                                        *
- * LastModified: Aug 6, 2014                              *
+ * LastModified: Aug 15, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -189,7 +189,15 @@ class Writer {
             writeArrayWithRef(value);
         }
         else static if (is(U == struct)) {
-            static if (is(U == DateTime)) {
+            static if (isInstanceOf!(Nullable, U) || isInstanceOf!(NullableRef, U)) {
+                if (value.isNull()) {
+                    writeNull();
+                }
+                else {
+                    serialize(value.get());
+                }
+            }
+            else static if (is(U == DateTime)) {
                 writeDateTime(value);
             }
             else static if (is(U == Date)) {
@@ -569,7 +577,7 @@ unittest {
     fw.serialize(nias);
     fw.serialize(1);
     fw.serialize(12345);
-    immutable int i = -123456789;
+    int i = -123456789;
     fw.serialize(i);
     assert(bytes.toString() == "nnnn1i12345;i-123456789;");
     bytes.init("");
@@ -667,4 +675,15 @@ unittest {
     rw.serialize(vi);
     rw.serialize(jv);
     assert(bytes.toString() == "s2\"你好\"i12;");
+    Nullable!int ni = 10;
+    NullableRef!int nr = &i;
+    bytes.init("");
+    rw.reset();
+    rw.serialize(ni);
+    ni.nullify();
+    rw.serialize(ni);
+    rw.serialize(nr);
+    nr.nullify();
+    rw.serialize(nr);
+    assert(bytes.toString() == "i10;ni-123456789;n");
 }
