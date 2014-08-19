@@ -13,7 +13,7 @@
  *                                                        *
  * hprose bytes io library for D.                         *
  *                                                        *
- * LastModified: Aug 6, 2014                              *
+ * LastModified: Aug 18, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -30,7 +30,7 @@ import std.bigint;
 import std.string;
 
 class BytesIO {
-    private ubyte[] _buffer;
+    private char[] _buffer;
     private int _pos;
     this() {
         this("");
@@ -41,11 +41,8 @@ class BytesIO {
     this(ubyte[] data) {
         init(data);
     }
-    void init(string data) {
-        init(cast(ubyte[])data);
-    }
-    void init(ubyte[] data) {
-        _buffer = data;
+    void init(T)(T data) {
+        _buffer = cast(char[])data;
         _pos = 0;
     }
     void close() {
@@ -55,7 +52,7 @@ class BytesIO {
     @property int size() {
         return _buffer.length;
     }
-    ubyte read() {
+    char read() {
         if (size > _pos) {
             return _buffer[_pos++];
         }
@@ -63,27 +60,27 @@ class BytesIO {
             throw new Exception("no byte found in stream");
         }
     }
-    ubyte[] read(int n) {
-        ubyte[] bytes = _buffer[_pos .. _pos + n];
+    char[] read(int n) {
+        char[] bytes = _buffer[_pos .. _pos + n];
         _pos += n;
         return bytes;
     }
-    ubyte[] readFull() {
-        ubyte[] bytes = _buffer[_pos .. $];
+    char[] readFull() {
+        char[] bytes = _buffer[_pos .. $];
         _pos = size;
         return bytes;
     }
-    ubyte[] readUntil(T...)(T tags) {
+    char[] readUntil(T...)(T tags) {
         int count = countUntil(_buffer[_pos .. $], tags);
         if (count < 0) return readFull();
-        ubyte[] bytes = _buffer[_pos .. _pos + count];
+        char[] bytes = _buffer[_pos .. _pos + count];
         _pos += count + 1;
         return bytes;
     }
-    ubyte skipUntil(T...)(T tags) {
+    char skipUntil(T...)(T tags) {
         int count = countUntil(_buffer[_pos .. $], tags);
         if (count < 0) throw new Exception("does not find tags in stream");
-        ubyte result = _buffer[_pos + count];
+        char result = _buffer[_pos + count];
         _pos += count + 1;
         return result;
     }
@@ -99,7 +96,7 @@ class BytesIO {
         if (_pos > size) throw new Exception("bad utf-8 encoding"); 
         return cast(string)_buffer[pos .. _pos];
     }
-    string readString(int wlen) {
+    T readString(T = string)(int wlen) if (isSomeString!T) {
         int len = 0;
         int pos = _pos;
         for (int i = 0; i < wlen; ++i) {
@@ -113,14 +110,14 @@ class BytesIO {
             }
         }
         if (_pos > size) throw new Exception("bad utf-8 encoding"); 
-        return cast(string)_buffer[pos .. _pos];
+        return cast(T)_buffer[pos .. _pos];
     }
-    int readInt(char tag) {
+    T readInt(T = int)(char tag) if (isIntegral!T) {
         int c = read();
         if (c == tag) return 0;
-        int result = 0;
+        T result = 0;
         int len = size;
-        int sign = 1;
+        T sign = 1;
         switch (c) {
             case TagNeg: sign = -1; goto case TagPos;
             case TagPos: c = read(); goto default;
@@ -139,27 +136,27 @@ class BytesIO {
     @property bool eof() {
         return _pos >= size;
     }
-    BytesIO write(in ubyte[] data) {
+    BytesIO write(in char[] data) {
         if (data.length > 0) {
             _buffer ~= data;
         }
         return this;
     }
     BytesIO write(in byte[] data) {
-        return write(cast(ubyte[])data);
+        return write(cast(char[])data);
     }
-    BytesIO write(in char[] str) {
-        return write(cast(ubyte[])str);
+    BytesIO write(in ubyte[] data) {
+        return write(cast(char[])data);
     }
     BytesIO write(T)(in T x) {
         static if (isIntegral!(T) ||
                    isSomeChar!(T) ||
                    is(T == float)) {
-            _buffer ~= cast(ubyte[])to!string(x);
+            _buffer ~= cast(char[])to!string(x);
         }
         else static if (is(T == double) ||
                         is(T == real)) {
-            _buffer ~= cast(ubyte[])format("%.16g", x);
+            _buffer ~= cast(char[])format("%.16g", x);
         }
         return this;
 	}
