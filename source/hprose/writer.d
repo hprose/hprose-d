@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer library for D.                           *
  *                                                        *
- * LastModified: Aug 15, 2014                             *
+ * LastModified: Aug 20, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -189,7 +189,7 @@ class Writer {
             writeArrayWithRef(value);
         }
         else static if (is(U == struct)) {
-            static if (isInstanceOf!(Nullable, U) || isInstanceOf!(NullableRef, U)) {
+            static if (isInstanceOf!(Nullable, U)) {
                 if (value.isNull()) {
                     writeNull();
                 }
@@ -676,14 +676,10 @@ unittest {
     rw.serialize(jv);
     assert(bytes.toString() == "s2\"你好\"i12;");
     Nullable!int ni = 10;
-    NullableRef!int nr = &i;
     bytes.init("");
     rw.reset();
     rw.serialize(ni);
     ni.nullify();
     rw.serialize(ni);
-    rw.serialize(nr);
-    nr.nullify();
-    rw.serialize(nr);
-    assert(bytes.toString() == "i10;ni-123456789;n");
+    assert(bytes.toString() == "i10;n");
 }
