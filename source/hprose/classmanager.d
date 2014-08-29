@@ -13,7 +13,7 @@
  *                                                        *
  * hprose classmanager library for D.                     *
  *                                                        *
- * LastModified: Aug 1, 2014                              *
+ * LastModified: Aug 29, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -23,7 +23,6 @@ module hprose.classmanager;
 
 import std.stdio;
 import std.traits;
-
 
 private synchronized class classmanager {
     private TypeInfo[string] nameCache;
@@ -36,10 +35,10 @@ private synchronized class classmanager {
         return name;
     }
     TypeInfo getClass(string name) {
-        return cast(TypeInfo)nameCache.get(name, null);
+        return (cast(TypeInfo[string])nameCache).get(name, null);
     }
     string getAlias(T)() {
-        return typeCache.get(typeid(Unqual!(T)), register!(T)(Unqual!(T).stringof));
+        return (cast(string[TypeInfo])typeCache).get(typeid(Unqual!(T)), register!(T)(Unqual!(T).stringof));
     }
 }
 
