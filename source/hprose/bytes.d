@@ -112,7 +112,7 @@ class BytesIO {
         if (_pos > size) throw new Exception("bad utf-8 encoding"); 
         return cast(T)_buffer[pos .. _pos];
     }
-    T readInt(T = int)(char tag) if (isIntegral!T) {
+    T readInt(T = int)(char tag) if (isSigned!T) {
         int c = read();
         if (c == tag) return 0;
         T result = 0;
@@ -129,6 +129,9 @@ class BytesIO {
             c = read();
         }
         return result;
+    }
+    T readInt(T)(char tag) if (isUnsigned!T) {
+        return cast(T)readInt!(Signed!T)(tag);
     }
     void skip(int n) {
         _pos += n;
