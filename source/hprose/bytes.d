@@ -13,7 +13,7 @@
  *                                                        *
  * hprose bytes io library for D.                         *
  *                                                        *
- * LastModified: Aug 18, 2014                             *
+ * LastModified: Nov 29, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -31,7 +31,7 @@ import std.string;
 
 class BytesIO {
     private char[] _buffer;
-    private int _pos;
+    private long _pos;
     this() {
         this("");
     }
@@ -49,7 +49,7 @@ class BytesIO {
         _buffer.length = 0;
         _pos = 0;
     }
-    @property int size() {
+    @property long size() {
         return _buffer.length;
     }
     char read() {
@@ -71,7 +71,7 @@ class BytesIO {
         return bytes;
     }
     char[] readUntil(T...)(T tags) {
-        int count = countUntil(_buffer[_pos .. $], tags);
+        long count = countUntil(_buffer[_pos .. $], tags);
         if (count < 0) return readFull();
         char[] bytes = _buffer[_pos .. _pos + count];
         _pos += count + 1;
@@ -85,7 +85,7 @@ class BytesIO {
         return result;
     }
     string readUTF8Char() {
-        int pos = _pos;
+        long pos = _pos;
         ubyte tag = read();
         switch (tag >> 4) {
             case 0: .. case 7: break;
@@ -97,8 +97,7 @@ class BytesIO {
         return cast(string)_buffer[pos .. _pos];
     }
     T readString(T = string)(int wlen) if (isSomeString!T) {
-        int len = 0;
-        int pos = _pos;
+        long pos = _pos;
         for (int i = 0; i < wlen; ++i) {
             ubyte tag = read();
             switch (tag >> 4) {
@@ -116,7 +115,7 @@ class BytesIO {
         int c = read();
         if (c == tag) return 0;
         T result = 0;
-        int len = size;
+        long len = size;
         T sign = 1;
         switch (c) {
             case TagNeg: sign = -1; goto case TagPos;
