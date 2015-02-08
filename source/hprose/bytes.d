@@ -13,7 +13,7 @@
  *                                                        *
  * hprose bytes io library for D.                         *
  *                                                        *
- * LastModified: Nov 29, 2014                             *
+ * LastModified: Feb 8, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -78,7 +78,7 @@ class BytesIO {
         return bytes;
     }
     char skipUntil(T...)(T tags) {
-        int count = countUntil(_buffer[_pos .. $], tags);
+        auto count = countUntil(_buffer[_pos .. $], tags);
         if (count < 0) throw new Exception("does not find tags in stream");
         char result = _buffer[_pos + count];
         _pos += count + 1;

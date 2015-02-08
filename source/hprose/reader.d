@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader library for D.                           *
  *                                                        *
- * LastModified: Sep 6, 2014                              *
+ * LastModified: Feb 8, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -164,7 +164,12 @@ private:
         _refer.set(Variant(value));
     }
     T readRef(T)() {
-        return cast(T)_refer.read(_bytes.readInt(TagSemicolon)).get!(Unqual!T);
+		static if (is(Unqual!T == Variant)) {
+			return cast(T)_refer.read(_bytes.readInt(TagSemicolon));
+		}
+		else {
+        	return cast(T)_refer.read(_bytes.readInt(TagSemicolon)).get!(Unqual!T);
+		}
     }
     T readInteger(T)(char tag) if (isIntegral!T) {
         alias U = Unqual!T;
@@ -325,6 +330,40 @@ private:
             default: throw unexpectedTag(tag);
         }
     }
+	T readJSONValue(T)(char tag) if (is(Unqual!T == JSONValue)) {
+		alias U = Unqual!T;
+		switch(tag) {
+			case '0': .. case '9': return JSONValue(cast(long)(tag - '0'));
+			case TagInteger: return JSONValue(readIntegerWithoutTag!int());
+			case TagLong: {
+				BigInt bi = readBigIntWithoutTag!BigInt();
+				if (bi > BigInt(ulong.max) || bi < BigInt(long.min)) {
+					return JSONValue(bi.toDecimalString());
+				}
+				else if (bi > BigInt(long.max)) {
+					return JSONValue(bi.toDecimalString().to!ulong());
+				}
+				else {
+					return JSONValue(bi.toLong());
+				}
+			}
+			case TagDouble: return JSONValue(readDoubleWithoutTag!double());
+			case TagNaN: return JSONValue(double.nan);
+			case TagInfinity: return JSONValue(readInfinityWithoutTag!double());
+			case TagNull: return JSONValue(null);
+			case TagEmpty: return JSONValue("");
+			case TagTrue: return JSONValue(true);
+			case TagFalse: return JSONValue(false);
+			case TagUTF8Char: return JSONValue(readUTF8CharWithoutTag!string());
+			case TagString: return JSONValue(readStringWithoutTag!string());
+			case TagDate: return JSONValue(readDateWithoutTag!SysTime().toString());
+			case TagTime: return JSONValue(readTimeWithoutTag!TimeOfDay().toString());
+			case TagGuid: return JSONValue(readUUIDWithoutTag!UUID().toString());
+			case TagList: return JSONValue(readArrayWithoutTag!(JSONValue[])());
+			case TagMap: return JSONValue(readAssociativeArrayWithoutTag!(JSONValue[string])());
+			default: throw unexpectedTag(tag);
+		}
+	}
     void readClass() {
         TypeInfo classtype = ClassManager.getClass(_readStringWithoutTag());
         int count = _bytes.readInt(TagOpenbrace);
@@ -373,6 +412,9 @@ private:
         else static if (isAssociativeArray!T) {
             return readAssociativeArray!T(tag);
         }
+		else static if (is(Unqual!T == JSONValue)) {
+			return readJSONValue!T(tag);
+		}
     }
 public:
     this(BytesIO bytes, bool simple = false) {
@@ -553,7 +595,7 @@ public:
     T readString(T)() if (isSomeString!T) {
         return readString!T(_bytes.read());
     }
-    T readUUIDWithoutTag(T)() if (Unqual!T == UUID) {
+    T readUUIDWithoutTag(T)() if (is(Unqual!T == UUID)) {
         _bytes.skip(1);
         UUID uuid = UUID(_bytes.read(36));
         _bytes.skip(1);
@@ -606,6 +648,9 @@ public:
         return readAssociativeArray!T(_bytes.read());
     }
     alias readAssociativeArray readMap;
+	T readJSONValue(T)() if (Unqual!T == JSONValue) {
+		return readJSONValue!T(_bytes.read());
+	}
 }
 
 unittest {
@@ -822,4 +867,45 @@ unittest {
     assert(reader.unserialize!(const double) == 1.0);
     assert(reader.unserialize!(int)() == 1);
     assert(reader.unserialize!(Nullable!int)() == 1);
+}
+
+unittest {
+	import hprose.writer;
+	import std.math;
+	BytesIO bytes = new BytesIO();
+	Writer writer = new Writer(bytes);
+	writer.serialize(1);
+	writer.serialize(long.max);
+	writer.serialize(ulong.max);
+	writer.serialize(BigInt("1234567890987654321234567890"));
+	writer.serialize(PI);
+	writer.serialize("你");
+	writer.serialize("一闪一闪亮晶晶，烧饼油条卷大葱");
+	writer.serialize(UUID("21f7f8de-8051-5b89-8680-0195ef798b6a"));
+	writer.serialize(SysTime(DateTime(2015, 2, 8, 23, 05, 31)));
+	writer.serialize(TimeOfDay(12, 12, 21));
+	writer.serialize(Date(2015, 2, 8));
+	Reader reader = new Reader(bytes);
+	JSONValue jv = reader.unserialize!(JSONValue)();
+	assert(jv == JSONValue(1));
+	jv = reader.unserialize!(JSONValue)();
+	assert(jv == JSONValue(long.max));
+	jv = reader.unserialize!(JSONValue)();
+	assert(jv == JSONValue(ulong.max));
+	jv = reader.unserialize!(JSONValue)();
+	assert(jv.str == "1234567890987654321234567890");
+	jv = reader.unserialize!(JSONValue)();
+	assert(jv == JSONValue(PI));
+	jv = reader.unserialize!(JSONValue)();
+	assert(jv.str == "你");
+	jv = reader.unserialize!(JSONValue)();
+	assert(jv.str == "一闪一闪亮晶晶，烧饼油条卷大葱");
+	jv = reader.unserialize!(JSONValue)();
+	assert(jv.str == "21f7f8de-8051-5b89-8680-0195ef798b6a");
+	jv = reader.unserialize!(JSONValue)();
+	assert(jv.str == "2015-Feb-08 23:05:31");
+	jv = reader.unserialize!(JSONValue)();
+	assert(jv.str == "12:12:21");
+	jv = reader.unserialize!(JSONValue)();
+	assert(jv.str == "2015-Feb-08 00:00:00");
 }

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer library for D.                           *
  *                                                        *
- * LastModified: Aug 20, 2014                             *
+ * LastModified: Feb 8, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -414,7 +414,7 @@ class Writer {
     void writeString(T)(T value) if (isSomeString!(T)) {
         _refer.set(cast(any)value);
         _bytes.write(TagString);
-        int len = codeLength!wchar(value);
+        auto len = codeLength!wchar(value);
         if (len > 0) _bytes.write(len);
         static if (is(T : const char[])) {
             _bytes.write(TagQuote).write(value).write(TagQuote);
@@ -432,7 +432,7 @@ class Writer {
             is(Unqual!(ForeachType!(T)) == byte))) {
         _refer.set(cast(any)value);
         _bytes.write(TagBytes);
-        int len = value.length;
+        auto len = value.length;
         if (len > 0) _bytes.write(len);
         _bytes.write(TagQuote).write(value).write(TagQuote);
     }
@@ -462,10 +462,10 @@ class Writer {
             static if (isDynamicArray!(T) ||
                        __traits(hasMember, T, "length") &&
                        is(typeof(__traits(getMember, T.init, "length")) == size_t)) {
-                int len = value.length;
+                auto len = value.length;
             }
             else {
-                int len = 0;
+                auto len = 0;
                 foreach(ref e; value) { ++len; }
             }
             if (len > 0) _bytes.write(len);
@@ -489,7 +489,7 @@ class Writer {
     void writeAssociativeArray(T)(T value) if (isAssociativeArray!(T) && isSerializable!(T)) {
         _refer.set(cast(any)value);
         _bytes.write(TagMap);
-        int len = value.length;
+        auto len = value.length;
         if (len > 0) _bytes.write(len);
         _bytes.write(TagOpenbrace);
         foreach(k, ref v; value) {
