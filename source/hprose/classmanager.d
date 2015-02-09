@@ -13,7 +13,7 @@
  *                                                        *
  * hprose classmanager library for D.                     *
  *                                                        *
- * LastModified: Aug 29, 2014                             *
+ * LastModified: Feb 9, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,8 +25,10 @@ import std.stdio;
 import std.traits;
 
 private synchronized class classmanager {
-    private TypeInfo[string] nameCache;
-    private string[TypeInfo] typeCache;
+    private {
+		TypeInfo[string] nameCache;
+    	string[TypeInfo] typeCache;
+	}
     string register(T)(string name) {
         if (name !in nameCache) {
             nameCache[name] = cast(shared)typeid(Unqual!(T));

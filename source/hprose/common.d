@@ -13,7 +13,7 @@
  *                                                        *
  * hprose common library for D.                           *
  *                                                        *
- * LastModified: Aug 15, 2014                             *
+ * LastModified: Feb 9, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -78,11 +78,15 @@ template getSerializableFields(T) if (is(T == struct) || is(T == class)) {
 }
 
 
-private struct MyStruct { int a; };
+private {
 
-private class MyClass { int a; this(int a) {}; this() {}; };
+	struct MyStruct { int a; };
 
-unittest {
-    assert(getSerializableFields!(MyStruct) == tuple("a"));
-    assert(getSerializableFields!(MyClass) == tuple("a"));
+	class MyClass { int a; this(int a) {}; this() {}; };
+
+	unittest {
+	    assert(getSerializableFields!(MyStruct) == tuple("a"));
+	    assert(getSerializableFields!(MyClass) == tuple("a"));
+	}
+
 }

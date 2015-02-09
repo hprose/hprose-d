@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer library for D.                           *
  *                                                        *
- * LastModified: Feb 8, 2015                              *
+ * LastModified: Feb 9, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -38,80 +38,113 @@ import std.uuid;
 import std.utf;
 import std.variant;
 
-private alias void* any;
+private {
+	alias void* any;
 
-private interface WriterRefer {
-    void set(in any value);
-    bool write(in any value);
-    void reset();
-}
+	interface WriterRefer {
+	    void set(in any value);
+	    bool write(in any value);
+	    void reset();
+	}
 
-private final class FakeWriterRefer : WriterRefer {
-    void set(in any value) {}
-    bool write(in any value) { return false; }
-    void reset() {}
-}
+	final class FakeWriterRefer : WriterRefer {
+	    void set(in any value) {}
+	    bool write(in any value) { return false; }
+	    void reset() {}
+	}
 
-private final class RealWriterRefer : WriterRefer {
-    private int[any] _references;
-    private int _refcount = 0;
-    private BytesIO _bytes;
-    this(BytesIO bytes) {
-        _bytes = bytes;
-    }
-    void set(in any value) {
-        if (value !is null) {
-            _references[value] = _refcount;
-        }
-        ++_refcount;
-    }
-    bool write(in any value) {
-        if (value is null) return false;
-        int i = _references.get(value, -1);
-        if (i < 0) return false;
-        _bytes.write(TagRef).write(i).write(TagSemicolon);
-        return true;
-    }
-    void reset() {
-        _references = null;
-        _refcount = 0;
-    }
+	final class RealWriterRefer : WriterRefer {
+	    private int[any] _references;
+	    private int _refcount = 0;
+	    private BytesIO _bytes;
+	    this(BytesIO bytes) {
+	        _bytes = bytes;
+	    }
+	    void set(in any value) {
+	        if (value !is null) {
+	            _references[value] = _refcount;
+	        }
+	        ++_refcount;
+	    }
+	    bool write(in any value) {
+	        if (value is null) return false;
+	        int i = _references.get(value, -1);
+	        if (i < 0) return false;
+	        _bytes.write(TagRef).write(i).write(TagSemicolon);
+	        return true;
+	    }
+	    void reset() {
+	        _references = null;
+	        _refcount = 0;
+	    }
+	}
 }
 
 unittest {
-    class Test {
-        int a;
-    }
-    BytesIO bytes = new BytesIO();
-    WriterRefer wr = new RealWriterRefer(bytes);
-    string s = "hello";
-    assert(wr.write(cast(any)s) == false);
-    wr.set(cast(any)s);
-    assert(wr.write(cast(any)s) == true);
-    int[] a = [1,2,3,4,5,6];
-    assert(wr.write(cast(any)a) == false);
-    wr.set(cast(any)a);
-    assert(wr.write(cast(any)a) == true);
-    int[string] m = ["hello":1, "world":2];
-    assert(wr.write(cast(any)m) == false);
-    wr.set(cast(any)m);
-    assert(wr.write(cast(any)m) == true);
-    Test t = new Test();
-    assert(wr.write(cast(any)t) == false);
-    wr.set(cast(any)t);
-    assert(wr.write(cast(any)t) == true);
-    wr.reset();
-    assert(wr.write(cast(any)s) == false);
-    assert(wr.write(cast(any)a) == false);
-    assert(wr.write(cast(any)m) == false);
-    assert(wr.write(cast(any)t) == false);
+	class Test {
+		int a;
+	}
+	BytesIO bytes = new BytesIO();
+	WriterRefer wr = new RealWriterRefer(bytes);
+	string s = "hello";
+	assert(wr.write(cast(any)s) == false);
+	wr.set(cast(any)s);
+	assert(wr.write(cast(any)s) == true);
+	int[] a = [1,2,3,4,5,6];
+	assert(wr.write(cast(any)a) == false);
+	wr.set(cast(any)a);
+	assert(wr.write(cast(any)a) == true);
+	int[string] m = ["hello":1, "world":2];
+	assert(wr.write(cast(any)m) == false);
+	wr.set(cast(any)m);
+	assert(wr.write(cast(any)m) == true);
+	Test t = new Test();
+	assert(wr.write(cast(any)t) == false);
+	wr.set(cast(any)t);
+	assert(wr.write(cast(any)t) == true);
+	wr.reset();
+	assert(wr.write(cast(any)s) == false);
+	assert(wr.write(cast(any)a) == false);
+	assert(wr.write(cast(any)m) == false);
+	assert(wr.write(cast(any)t) == false);
 }
 
 class Writer {
-    private BytesIO _bytes;
-    private WriterRefer _refer;
-    private int[string] _classref;
-    private int _crcount = 0;
+    private {
+		BytesIO _bytes;
+    	WriterRefer _refer;
+    	int[string] _classref;
+    	int _crcount = 0;
+
+		pure string hnsecsToString(int hnsecs) {
+			if (hnsecs == 0) return "";
+			if (hnsecs % 10000 == 0) {
+				return TagPoint ~ format("%03d", hnsecs / 10000);
+			}
+			else if (hnsecs % 10 == 0) {
+				return TagPoint ~ format("%06d", hnsecs / 10);
+			}
+			else {
+				return TagPoint ~ format("%09d", hnsecs * 100);
+			}
+		}
+
+		int writeClass(T)(string name) if (is(T == struct) || is(T == class)) {
+			_bytes.write(TagClass).write(name.length).write(TagQuote).write(name).write(TagQuote);
+			enum fieldList = getSerializableFields!(T);
+			enum count = fieldList.length;
+			if (count > 0) _bytes.write(count);
+			_bytes.write(TagOpenbrace);
+			foreach(f; fieldList) {
+				writeString(f);
+			}
+			_bytes.write(TagClosebrace);
+			int index = _crcount++;
+			_classref[name] = index;
+			return index;
+		}
+	}
+
     this(BytesIO bytes, bool simple = false) {
         _bytes = bytes;
         if (simple) {
@@ -353,18 +386,6 @@ class Writer {
         _refer.set(null);
         _bytes.write(TagTime).write(value.toISOString()).write(TagSemicolon);
     }
-    private string hnsecsToString(int hnsecs) {
-        if (hnsecs == 0) return "";
-        if (hnsecs % 10000 == 0) {
-            return TagPoint ~ format("%03d", hnsecs / 10000);
-        }
-        else if (hnsecs % 10 == 0) {
-            return TagPoint ~ format("%06d", hnsecs / 10);
-        }
-        else {
-            return TagPoint ~ format("%09d", hnsecs * 100);
-        }
-    }
     void writeSysTime(SysTime value) {
         if (!value.isAD) {
             throw new Exception("Years BC is not supported in hprose.");
@@ -503,20 +524,6 @@ class Writer {
         if (!_refer.write(cast(any)value)) writeAssociativeArray(value);
     }
     alias writeAssociativeArrayWithRef writeMapWithRef;
-    private int writeClass(T)(string name) if (is(T == struct) || is(T == class)) {
-        _bytes.write(TagClass).write(name.length).write(TagQuote).write(name).write(TagQuote);
-        enum fieldList = getSerializableFields!(T);
-        enum count = fieldList.length;
-        if (count > 0) _bytes.write(count);
-        _bytes.write(TagOpenbrace);
-        foreach(f; fieldList) {
-            writeString(f);
-        }
-        _bytes.write(TagClosebrace);
-        int index = _crcount++;
-        _classref[name] = index;
-        return index;
-    }
     void writeObject(T)(T value) if (is(T == struct) || is(T == class)) {
         string name = ClassManager.getAlias!(T);
         int index = _classref.get(name, writeClass!(T)(name));
@@ -543,25 +550,27 @@ class Writer {
     }
 }
 
-private class MyClass {
-    const int a;
-    static const byte b;
-    private int c = 3;
-    @property {
-        int x() const { return c; }
-        int x(int value) { return c = value; }
-    }
-    this() { this.a = 1; }
-    this(int a) { this.a = a; }
-    void hello() {}
-};
+private {
+	class MyClass {
+	    const int a;
+	    static const byte b;
+	    private int c = 3;
+	    @property {
+	        int x() const { return c; }
+	        int x(int value) { return c = value; }
+	    }
+	    this() { this.a = 1; }
+	    this(int a) { this.a = a; }
+	    void hello() {}
+	};
 
-private struct MyStruct {
-    const int a;
-    static const byte b;
-    int c = 3;
-    this(int a) { this.a = a; }
-    void hello() {}
+	struct MyStruct {
+	    const int a;
+	    static const byte b;
+	    int c = 3;
+	    this(int a) { this.a = a; }
+	    void hello() {}
+	}
 }
 
 unittest {

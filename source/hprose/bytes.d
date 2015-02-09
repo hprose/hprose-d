@@ -13,7 +13,7 @@
  *                                                        *
  * hprose bytes io library for D.                         *
  *                                                        *
- * LastModified: Feb 8, 2015                              *
+ * LastModified: Feb 9, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -30,9 +30,24 @@ import std.bigint;
 import std.string;
 
 class BytesIO {
-    private char[] _buffer;
-    private long _pos;
-    this() {
+    private {
+		char[] _buffer;
+    	long _pos;
+	}
+
+	@property {
+		long size() {
+			return _buffer.length;
+		}
+		bool eof() {
+			return _pos >= size;
+		}
+		immutable(ubyte)[] buffer() {
+			return cast(immutable(ubyte)[])_buffer;
+		}
+	}
+
+	this() {
         this("");
     }
     this(string data) {
@@ -48,9 +63,6 @@ class BytesIO {
     void close() {
         _buffer.length = 0;
         _pos = 0;
-    }
-    @property long size() {
-        return _buffer.length;
     }
     char read() {
         if (size > _pos) {
@@ -135,9 +147,6 @@ class BytesIO {
     void skip(int n) {
         _pos += n;
     }
-    @property bool eof() {
-        return _pos >= size;
-    }
     BytesIO write(in char[] data) {
         if (data.length > 0) {
             _buffer ~= data;
@@ -164,9 +173,6 @@ class BytesIO {
 	}
     override string toString() {
         return cast(string)_buffer;
-    }
-    @property immutable(ubyte)[] buffer() {
-		return cast(immutable(ubyte)[])_buffer;
     }
 }
 
