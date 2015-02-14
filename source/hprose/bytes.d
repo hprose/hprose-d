@@ -13,7 +13,7 @@
  *                                                        *
  * hprose bytes io library for D.                         *
  *                                                        *
- * LastModified: Feb 9, 2015                              *
+ * LastModified: Feb 14, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -31,23 +31,23 @@ import std.string;
 
 class BytesIO {
     private {
-		char[] _buffer;
-    	long _pos;
-	}
+        char[] _buffer;
+        long _pos;
+    }
 
-	@property {
-		long size() {
-			return _buffer.length;
-		}
-		bool eof() {
-			return _pos >= size;
-		}
-		immutable(ubyte)[] buffer() {
-			return cast(immutable(ubyte)[])_buffer;
-		}
-	}
+    @property {
+        long size() {
+            return _buffer.length;
+        }
+        bool eof() {
+            return _pos >= size;
+        }
+        immutable(ubyte)[] buffer() {
+            return cast(immutable(ubyte)[])_buffer;
+        }
+    }
 
-	this() {
+    this() {
         this("");
     }
     this(string data) {
@@ -161,16 +161,16 @@ class BytesIO {
     }
     BytesIO write(T)(in T x) {
         static if (isIntegral!(T) ||
-                   isSomeChar!(T) ||
-                   is(T == float)) {
+            isSomeChar!(T) ||
+            is(T == float)) {
             _buffer ~= cast(char[])to!string(x);
         }
         else static if (is(T == double) ||
-                        is(T == real)) {
+            is(T == real)) {
             _buffer ~= cast(char[])format("%.16g", x);
         }
         return this;
-	}
+    }
     override string toString() {
         return cast(string)_buffer;
     }
@@ -180,15 +180,15 @@ unittest {
     BytesIO bytes = new BytesIO("i123;d3.14;");
     assert(bytes.readUntil(';') == "i123");
     assert(bytes.readUntil(';') == "d3.14");
-	bytes.write("hello");
-	assert(bytes.read(5) == "hello");
+    bytes.write("hello");
+    assert(bytes.read(5) == "hello");
     const int i = 123456789;
-	bytes.write(i).write(';');
-	assert(bytes.readInt(';') == i);
-	bytes.write(1).write('1').write(';');
-	assert(bytes.readInt(';') == 11);
+    bytes.write(i).write(';');
+    assert(bytes.readInt(';') == i);
+    bytes.write(1).write('1').write(';');
+    assert(bytes.readInt(';') == 11);
     const float f = 3.14159265;
-	bytes.write(f).write(';');
+    bytes.write(f).write(';');
     assert(bytes.readUntil(';') == "3.14159");
     const double d = 3.141592653589793238;
     bytes.write(d).write(';');

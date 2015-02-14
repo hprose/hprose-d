@@ -13,7 +13,7 @@
  *                                                        *
  * hprose common library for D.                           *
  *                                                        *
- * LastModified: Feb 9, 2015                              *
+ * LastModified: Feb 14, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -33,13 +33,13 @@ enum ResultMode {
 template isSerializable(T) {
     alias U = Unqual!T;
     static if (is(U == typeof(null)) ||
-               isBasicType!(U) ||
-               isSomeString!(U) ||
-               is(U == struct)) {
+        isBasicType!(U) ||
+        isSomeString!(U) ||
+        is(U == struct)) {
         enum isSerializable = true;
     }
     else static if (is(U == class) && !isAbstractClass!(U)
-                    && __traits(compiles, { new U; })) {
+        && __traits(compiles, { new U; })) {
         enum isSerializable = true;
     }
     else static if (isArray!(U)) {
@@ -59,7 +59,7 @@ template isSerializableField(T) if (is(T == struct) || is(T == class)) {
             alias U = typeof(__traits(getMember, T, M));
             enum isSerializableField = isAssignable!(U) && isSerializable!(U) &&
                 !__traits(compiles, { mixin("(T)." ~ M ~ " = (U).init;"); }) &&
-                __traits(compiles, { mixin("const T x = T.init; U y = x." ~ M ~ ";"); });
+                    __traits(compiles, { mixin("const T x = T.init; U y = x." ~ M ~ ";"); });
         }
         else {
             enum isSerializableField = false;
@@ -73,20 +73,20 @@ template getSerializableFields(T) if (is(T == struct) || is(T == class)) {
         enum getSerializableFields = tuple(Filter!(isSerializableField!(T), allMembers));
     }
     else {
-        enum getSerializableFields = tuple();
+        static assert(0, T.stringof ~ " has no fields");
     }
 }
 
 
 private {
 
-	struct MyStruct { int a; };
+    struct MyStruct { int a; };
 
-	class MyClass { int a; this(int a) {}; this() {}; };
+    class MyClass { int a; this(int a) {}; this() {}; };
 
-	unittest {
-	    assert(getSerializableFields!(MyStruct) == tuple("a"));
-	    assert(getSerializableFields!(MyClass) == tuple("a"));
-	}
+}
 
+unittest {
+    assert(getSerializableFields!(MyStruct) == tuple("a"));
+    assert(getSerializableFields!(MyClass) == tuple("a"));
 }
