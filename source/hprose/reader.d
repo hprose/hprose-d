@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader library for D.                           *
  *                                                        *
- * LastModified: Feb 14, 2015                             *
+ * LastModified: Feb 15, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -782,7 +782,7 @@ class Reader : RawReader {
         }
         auto unserializer = ClassManager.getUnserializer(t, this);
         if (t != typeid(U)) {
-            throw new Exception("cannot convert type " ~ t.toString() ~ " to type " ~ fullyQualifiedName!(T));
+            throw new Exception("cannot convert type " ~ t.toString() ~ " to type " ~ fullyQualifiedName!T);
         }
         unserializer.setRef();
         foreach(f; fields) unserializer.setField(f);
@@ -791,6 +791,11 @@ class Reader : RawReader {
     }
     T readObject(T)() if (is(T == struct) || is(T == class)) {
         return readObject!T(_bytes.read());
+    }
+    void readTuple(T...)(ref T args) {
+        setRef(null);
+        foreach (ref arg; args) arg = unserialize!(typeof(arg))();
+        _bytes.skip(1);
     }
 }
 
@@ -1145,8 +1150,6 @@ unittest {
 }
 
 unittest {
-    import hprose.writer;
-    import std.math;
     BytesIO bytes = new BytesIO("c8\"MyStruct\"1{s1\"c\"}o0{5}c7\"MyClass\"1{s1\"x\"}o1{5}m2{s1\"a\"5s1\"x\"2}");
     Reader reader = new Reader(bytes);
     hprose.reader.MyStruct mystruct = reader.unserialize!(hprose.reader.MyStruct)();
@@ -1158,4 +1161,15 @@ unittest {
     hprose.reader.MyClass myclass2 = reader.unserialize!(hprose.reader.MyClass)();
     assert(myclass2.a == 5);
     assert(myclass2.x == 2);
+}
+
+unittest {
+    import hprose.writer;
+    BytesIO bytes = new BytesIO("a3{1s5\"Hello\"r1;}");
+    Reader reader = new Reader(bytes);
+    bytes.read();
+    bytes.readInt(TagOpenbrace);
+    Tuple!(int, string, string) value;
+    reader.readTuple(value.expand);
+    assert(value == tuple(1, "Hello", "Hello"));
 }

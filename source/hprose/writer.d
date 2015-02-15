@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer library for D.                           *
  *                                                        *
- * LastModified: Feb 14, 2015                             *
+ * LastModified: Feb 15, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -131,7 +131,7 @@ class Writer {
 
         int writeClass(T)(string name) if (is(T == struct) || is(T == class)) {
             _bytes.write(TagClass).write(name.length).write(TagQuote).write(name).write(TagQuote);
-            enum fieldList = getSerializableFields!(T);
+            enum fieldList = getSerializableFields!T;
             enum count = fieldList.length;
             if (count > 0) _bytes.write(count);
             _bytes.write(TagOpenbrace);
@@ -159,15 +159,15 @@ class Writer {
         _classref = null;
         _crcount = 0;
     }
-    void serialize(T)(ref T value) if (isStaticArray!(T)) {
+    void serialize(T)(ref T value) if (isStaticArray!T) {
         serialize(value[0 .. $]);
     }
-    void serialize(T)(T value) if (isSerializable!(T)) {
+    void serialize(T)(T value) if (isSerializable!T) {
         alias Unqual!T U;
         static if (is(U == typeof(null))) {
             writeNull();
         }
-        else static if (isIntegral!(U)) {
+        else static if (isIntegral!U) {
             static if (is(U == byte) ||
                 is(U == ubyte) ||
                 is(U == short) ||
@@ -195,13 +195,13 @@ class Writer {
         else static if (is(U : BigInt)) {
             writeLong(value);
         }
-        else static if (isFloatingPoint!(U)) {
+        else static if (isFloatingPoint!U) {
             writeDouble(value);
         }
-        else static if (isBoolean!(U)) {
+        else static if (isBoolean!U) {
             writeBool(value);
         }
-        else static if (isSomeChar!(U)) {
+        else static if (isSomeChar!U) {
             static if (is(T == dchar)) {
                 if (value > value.init) {
                     char[4] buf;
@@ -215,11 +215,8 @@ class Writer {
                 writeUtf8Char(cast(wchar)value);
             }
         }
-        else static if (isStaticArray!(U)) {
+        else static if (isStaticArray!U) {
             serialize(value[0 .. $]);
-        }
-        else static if (!isDynamicArray!(U) && !isAssociativeArray!(U) && isIterable!(U)) {
-            writeArrayWithRef(value);
         }
         else static if (is(U == struct)) {
             static if (isInstanceOf!(Nullable, U)) {
@@ -289,18 +286,21 @@ class Writer {
                 }
                 throw new Exception("Not support to serialize this data.");
             }
+            else static if (isIterable!U) {
+                writeArrayWithRef(value);
+            }
             else {
                 writeObject(value);
             }
         }
         else static if (is(U == class) ||
-            isSomeString!(U) ||
-            isDynamicArray!(U) ||
-            isAssociativeArray!(U)) {
+            isSomeString!U ||
+            isDynamicArray!U ||
+            isAssociativeArray!U) {
             if (value is null) {
                 writeNull();
             }
-            else static if (isSomeString!(U)) {
+            else static if (isSomeString!U) {
                 if (value.length == 0) {
                     writeEmpty();
                 }
@@ -308,17 +308,20 @@ class Writer {
                     writeStringWithRef(value);
                 }
             }
-            else static if (isDynamicArray!(U)) {
-                static if (is(Unqual!(ForeachType!(U)) == ubyte) ||
-                    is(Unqual!(ForeachType!(U)) == byte)) {
+            else static if (isDynamicArray!U) {
+                static if (is(Unqual!(ForeachType!U) == ubyte) ||
+                    is(Unqual!(ForeachType!U) == byte)) {
                     writeBytesWithRef(value);
                 }
                 else {
                     writeArrayWithRef(value);
                 }
             }
-            else static if (isAssociativeArray!(U)) {
+            else static if (isAssociativeArray!U) {
                 writeAssociativeArrayWithRef(value);
+            }
+            else static if (isIterable!U) {
+                writeArrayWithRef(value);
             }
             else {
                 writeObjectWithRef(value);
@@ -345,7 +348,7 @@ class Writer {
     void writeLong(BigInt value) {
         _bytes.write(TagLong).write(value.toDecimalString()).write(TagSemicolon);
     }
-    void writeDouble(T)(in T value) if (isFloatingPoint!(T)) {
+    void writeDouble(T)(in T value) if (isFloatingPoint!T) {
         if (isNaN(value)) {
             _bytes.write(TagNaN);
         }
@@ -432,7 +435,7 @@ class Writer {
     void writeEmpty() {
         _bytes.write(TagEmpty);
     }
-    void writeString(T)(T value) if (isSomeString!(T)) {
+    void writeString(T)(T value) if (isSomeString!T) {
         _refer.set(cast(any)value);
         _bytes.write(TagString);
         auto len = codeLength!wchar(value);
@@ -444,13 +447,13 @@ class Writer {
             _bytes.write(TagQuote).write(toUTF8(value)).write(TagQuote);
         }
     }
-    void writeStringWithRef(T)(T value) if (isSomeString!(T)) {
+    void writeStringWithRef(T)(T value) if (isSomeString!T) {
         if (!_refer.write(cast(any)value)) writeString(value);
     }
     void writeBytes(T)(T value)
-        if (isDynamicArray!(T) &&
-            (is(Unqual!(ForeachType!(T)) == ubyte) ||
-            is(Unqual!(ForeachType!(T)) == byte))) {
+        if (isDynamicArray!T &&
+            (is(Unqual!(ForeachType!T) == ubyte) ||
+            is(Unqual!(ForeachType!T) == byte))) {
         _refer.set(cast(any)value);
         _bytes.write(TagBytes);
         auto len = value.length;
@@ -458,18 +461,18 @@ class Writer {
         _bytes.write(TagQuote).write(value).write(TagQuote);
     }
     void writeBytesWithRef(T)(T value)
-        if (isDynamicArray!(T) &&
-            (is(Unqual!(ForeachType!(T)) == ubyte) ||
-            is(Unqual!(ForeachType!(T)) == byte))) {
+        if (isDynamicArray!T &&
+            (is(Unqual!(ForeachType!T) == ubyte) ||
+            is(Unqual!(ForeachType!T) == byte))) {
         if (!_refer.write(cast(any)value)) writeBytes(value);
     }
-    void writeArray(T)(T value) if ((isIterable!(T) || isDynamicArray!(T)) && isSerializable!(T)) {
-        static if (isDynamicArray!(T) &&
-            is(Unqual!(ForeachType!(T)) == ubyte) ||
-            is(Unqual!(ForeachType!(T)) == byte)) {
+    void writeArray(T)(T value) if ((isIterable!T || isDynamicArray!T) && isSerializable!T) {
+        static if (isDynamicArray!T &&
+            is(Unqual!(ForeachType!T) == ubyte) ||
+            is(Unqual!(ForeachType!T) == byte)) {
             writeBytes(value);
         }
-        else static if (isSomeString!(T)) {
+        else static if (isSomeString!T) {
             writeString(value);
         }
         else {
@@ -480,7 +483,7 @@ class Writer {
                 _refer.set(cast(any)value);
             }
             _bytes.write(TagList);
-            static if (isDynamicArray!(T) ||
+            static if (isDynamicArray!T ||
                 __traits(hasMember, T, "length") &&
                 is(typeof(__traits(getMember, T.init, "length")) == size_t)) {
                 auto len = value.length;
@@ -491,14 +494,12 @@ class Writer {
             }
             if (len > 0) _bytes.write(len);
             _bytes.write(TagOpenbrace);
-            foreach(ref e; value) {
-                serialize(e);
-            }
+            foreach(ref e; value) serialize(e);
             _bytes.write(TagClosebrace);
         }
     }
     alias writeArray writeList;
-    void writeArrayWithRef(T)(T value) if ((isIterable!(T) || isDynamicArray!(T)) && isSerializable!(T)) {
+    void writeArrayWithRef(T)(T value) if ((isIterable!T || isDynamicArray!T) && isSerializable!T) {
         static if (is(T == struct)) {
             writeArray(value);
         }
@@ -507,7 +508,7 @@ class Writer {
         }
     }
     alias writeArrayWithRef writeListWithRef;
-    void writeAssociativeArray(T)(T value) if (isAssociativeArray!(T) && isSerializable!(T)) {
+    void writeAssociativeArray(T)(T value) if (isAssociativeArray!T && isSerializable!T) {
         _refer.set(cast(any)value);
         _bytes.write(TagMap);
         auto len = value.length;
@@ -520,13 +521,13 @@ class Writer {
         _bytes.write(TagClosebrace);
     }
     alias writeAssociativeArray writeMap;
-    void writeAssociativeArrayWithRef(T)(T value) if (isAssociativeArray!(T) && isSerializable!(T)) {
+    void writeAssociativeArrayWithRef(T)(T value) if (isAssociativeArray!T && isSerializable!T) {
         if (!_refer.write(cast(any)value)) writeAssociativeArray(value);
     }
     alias writeAssociativeArrayWithRef writeMapWithRef;
     void writeObject(T)(T value) if (is(T == struct) || is(T == class)) {
-        string name = ClassManager.getAlias!(T);
-        int index = _classref.get(name, writeClass!(T)(name));
+        string name = ClassManager.getAlias!T;
+        int index = _classref.get(name, writeClass!T(name));
         static if (is(T == struct)) {
             _refer.set(null);
         }
@@ -534,7 +535,7 @@ class Writer {
             _refer.set(cast(any)value);
         }
         _bytes.write(TagObject).write(index).write(TagOpenbrace);
-        enum fieldList = getSerializableFields!(T);
+        enum fieldList = getSerializableFields!T;
         foreach(f; fieldList) {
             serialize(__traits(getMember, value, f));
         }
@@ -547,6 +548,15 @@ class Writer {
         else {
             if (!_refer.write(cast(any)value)) writeObject(value);
         }
+    }
+    void writeTuple(T...)(T args) {
+        _refer.set(null);
+        _bytes.write(TagList);
+        auto len = args.length;
+        if (len > 0) _bytes.write(len);
+        _bytes.write(TagOpenbrace);
+        foreach(ref e; args) serialize(e);
+        _bytes.write(TagClosebrace);
     }
 }
 
@@ -689,4 +699,8 @@ unittest {
     ni.nullify();
     rw.serialize(ni);
     assert(bytes.toString() == "i10;n");
+    bytes.init("");
+    rw.reset();
+    rw.writeTuple(1,"Hello", "Hello");
+    assert(bytes.toString() == "a3{1s5\"Hello\"r1;}");
 }

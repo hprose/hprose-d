@@ -13,7 +13,7 @@
  *                                                        *
  * hprose bytes io library for D.                         *
  *                                                        *
- * LastModified: Feb 14, 2015                             *
+ * LastModified: Feb 15, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -160,8 +160,8 @@ class BytesIO {
         return write(cast(char[])data);
     }
     BytesIO write(T)(in T x) {
-        static if (isIntegral!(T) ||
-            isSomeChar!(T) ||
+        static if (isIntegral!T ||
+            isSomeChar!T ||
             is(T == float)) {
             _buffer ~= cast(char[])to!string(x);
         }

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose classmanager library for D.                     *
  *                                                        *
- * LastModified: Feb 14, 2015                             *
+ * LastModified: Feb 15, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -93,7 +93,7 @@ private synchronized class classmanager {
         return null;
     }
     string getAlias(T)() {
-        return (cast(string[TypeInfo])typeCache).get(typeid(Unqual!T), register!(T)(Unqual!T.stringof));
+        return (cast(string[TypeInfo])typeCache).get(typeid(Unqual!T), register!T(Unqual!T.stringof));
     }
 }
 
