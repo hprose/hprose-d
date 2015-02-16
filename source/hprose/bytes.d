@@ -23,11 +23,11 @@ module hprose.bytes;
 
 import hprose.tags;
 import std.algorithm;
+import std.bigint;
 import std.conv;
 import std.stdio;
-import std.traits;
-import std.bigint;
 import std.string;
+import std.traits;
 
 class BytesIO {
     private {

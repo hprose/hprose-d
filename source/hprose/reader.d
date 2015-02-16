@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader library for D.                           *
  *                                                        *
- * LastModified: Feb 15, 2015                             *
+ * LastModified: Feb 16, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -22,12 +22,13 @@ module hprose.reader;
 @trusted:
 
 import hprose.bytes;
-import hprose.common;
 import hprose.classmanager;
+import hprose.common;
 import hprose.tags;
 import std.algorithm;
 import std.bigint;
 import std.container;
+import std.conv;
 import std.datetime;
 import std.json;
 import std.math;
@@ -35,10 +36,9 @@ import std.stdio;
 import std.string;
 import std.traits;
 import std.typecons;
-import std.uuid;
 import std.utf;
+import std.uuid;
 import std.variant;
-import std.conv;
 
 private {
     interface ReaderRefer {
@@ -476,7 +476,10 @@ class Reader : RawReader {
         }
         T unserialize(T)(char tag) if (isSerializable!T) {
             alias U = Unqual!T;
-            static if (isIntegral!T) {
+            static if (is(U == enum)) {
+                return cast(T)unserialize!(OriginalType!T)(tag);
+            }
+            else static if (isIntegral!T) {
                 return readInteger!T(tag);
             }
             else static if (is(U == BigInt)) {
@@ -1164,7 +1167,6 @@ unittest {
 }
 
 unittest {
-    import hprose.writer;
     BytesIO bytes = new BytesIO("a3{1s5\"Hello\"r1;}");
     Reader reader = new Reader(bytes);
     bytes.read();
@@ -1172,4 +1174,17 @@ unittest {
     Tuple!(int, string, string) value;
     reader.readTuple(value.expand);
     assert(value == tuple(1, "Hello", "Hello"));
+}
+
+unittest {
+    enum Color {
+        Red, Blue, Green
+    }
+    BytesIO bytes = new BytesIO("a3{012}");
+    Reader reader = new Reader(bytes);
+    bytes.read();
+    bytes.readInt(TagOpenbrace);
+    Tuple!(Color, Color, Color) value;
+    reader.readTuple(value.expand);
+    assert(value == tuple(Color.Red, Color.Blue, Color.Green));
 }

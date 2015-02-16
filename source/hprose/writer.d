@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer library for D.                           *
  *                                                        *
- * LastModified: Feb 15, 2015                             *
+ * LastModified: Feb 16, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -22,8 +22,8 @@ module hprose.writer;
 @trusted:
 
 import hprose.bytes;
-import hprose.common;
 import hprose.classmanager;
+import hprose.common;
 import hprose.tags;
 import std.bigint;
 import std.container;
@@ -34,8 +34,8 @@ import std.stdio;
 import std.string;
 import std.traits;
 import std.typecons;
-import std.uuid;
 import std.utf;
+import std.uuid;
 import std.variant;
 
 private {
@@ -166,6 +166,9 @@ class Writer {
         alias Unqual!T U;
         static if (is(U == typeof(null))) {
             writeNull();
+        }
+        else static if (is(U == enum)) {
+            serialize!(OriginalType!T)(cast(OriginalType!T)value);
         }
         else static if (isIntegral!U) {
             static if (is(U == byte) ||
@@ -597,9 +600,11 @@ unittest {
     int i = -123456789;
     fw.serialize(i);
     assert(bytes.toString() == "nnnn1i12345;i-123456789;");
+
     bytes.init("");
     rw.serialize(BigInt(1234567890987654321L));
     assert(bytes.toString() == "l1234567890987654321;");
+
     bytes.init("");
     rw.serialize(3.14159265358979323846f);
     rw.serialize(3.14159265358979323846);
@@ -608,40 +613,52 @@ unittest {
     rw.serialize(float.infinity);
     rw.serialize(-real.infinity);
     assert(bytes.toString() == "d3.14159;d3.141592653589793;NNI+I-");
+
     bytes.init("");
     rw.serialize(true);
     rw.serialize(false);
     assert(bytes.toString() == "tf");
+
     bytes.init("");
     rw.serialize(Date(1980, 12, 01));
     assert(bytes.toString() == "D19801201;");
+
     bytes.init("");
     rw.serialize(DateTime(1980, 12, 01, 17, 48, 54));
     assert(bytes.toString() == "D19801201T174854;");
+
     bytes.init("");
     rw.serialize(DateTime(1980, 12, 01));
     assert(bytes.toString() == "D19801201T000000;");
+
     bytes.init("");
     rw.serialize(TimeOfDay(17, 48, 54));
     assert(bytes.toString() == "T174854;");
+
     bytes.init("");
     rw.serialize(SysTime(DateTime(1980, 12, 01, 17, 48, 54)));
     assert(bytes.toString() == "D19801201T174854;");
+
     bytes.init("");
     rw.serialize(SysTime(DateTime(1980, 12, 01, 17, 48, 54), UTC()));
     assert(bytes.toString() == "D19801201T174854Z");
+
     bytes.init("");
     rw.serialize(SysTime(DateTime(1980, 12, 01, 17, 48, 54), FracSec.from!"usecs"(802_400)));
     assert(bytes.toString() == "D19801201T174854.802400;");
+
     bytes.init("");
     rw.serialize(SysTime(DateTime(1980, 12, 01, 17, 48, 54), FracSec.from!"usecs"(802_4), UTC()));
     assert(bytes.toString() == "D19801201T174854.008024Z");
+
     bytes.init("");
     rw.serialize(UUID());
     assert(bytes.toString() == "g\"00000000-0000-0000-0000-000000000000\"");
+
     bytes.init("");
     rw.serialize(dnsNamespace);
     assert(bytes.toString() == "g\"" ~ dnsNamespace.toString() ~ "\"");
+
     bytes.init("");
     rw.reset();
     rw.serialize("");
@@ -649,6 +666,7 @@ unittest {
     rw.serialize("hello");
     rw.serialize("hello");
     assert(bytes.toString() == "eu我s5\"hello\"r0;");
+
     ubyte[8] ba1 = [0,1,2,3,4,5,0x90,0xff];
     ubyte[8] ba2 = [0,1,2,3,4,5,0x90,0xff];
     bytes.init("");
@@ -659,6 +677,7 @@ unittest {
     assert(bytes.toString() == "b8\"\x00\x01\x02\x03\x04\x05\x90\xff\"r0;b8\"\x00\x01\x02\x03\x04\x05\x90\xff\"");
     int[5] ia = [0,1,2,3,4];
     int[] ida = [0,1,2,3,4];
+
     bytes.init("");
     rw.reset();
     rw.serialize(ia);
@@ -666,16 +685,19 @@ unittest {
     rw.serialize(ia);
     assert(bytes.toString() == "a5{01234}a5{01234}r0;");
     string[string] ssa = ["Hello": "World", "Hi": "World"];
+
     bytes.init("");
     rw.reset();
     rw.serialize(ssa);
     rw.serialize(ssa);
     assert(bytes.toString() == "m2{s5\"Hello\"s5\"World\"s2\"Hi\"r2;}r0;");
+
     bytes.init("");
     rw.reset();
     rw.serialize(MyStruct());
     rw.serialize(new MyClass());
     assert(bytes.toString() == "c8\"MyStruct\"1{s1\"c\"}o0{3}c7\"MyClass\"1{s1\"x\"}o1{3}");
+
     SList!(int) slist = SList!(int)([1,2,3,4,5,6,7]);
     Array!(int) array = Array!(int)([1,2,3,4,5,6,7]);
     bytes.init("");
@@ -684,6 +706,7 @@ unittest {
     rw.serialize(array);
     rw.serialize(array);
     assert(bytes.toString() == "a7{1234567}a7{1234567}a7{1234567}");
+
     const char[] a = ['\xe4','\xbd','\xa0','\xe5','\xa5','\xbd'];
     const Variant vi = a;
     const JSONValue jv = 12;
@@ -692,6 +715,7 @@ unittest {
     rw.serialize(vi);
     rw.serialize(jv);
     assert(bytes.toString() == "s2\"你好\"i12;");
+
     Nullable!int ni = 10;
     bytes.init("");
     rw.reset();
@@ -699,8 +723,17 @@ unittest {
     ni.nullify();
     rw.serialize(ni);
     assert(bytes.toString() == "i10;n");
+
     bytes.init("");
     rw.reset();
     rw.writeTuple(1,"Hello", "Hello");
     assert(bytes.toString() == "a3{1s5\"Hello\"r1;}");
+
+    enum Color {
+        Red, Blue, Green
+    }
+    bytes.init("");
+    rw.reset();
+    rw.writeTuple(Color.Red, Color.Blue, Color.Green);
+    assert(bytes.toString() == "a3{012}");
 }

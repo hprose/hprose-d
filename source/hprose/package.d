@@ -13,7 +13,7 @@
  *                                                        *
  * hprose for D.                                          *
  *                                                        *
- * LastModified: Aug 1, 2014                              *
+ * LastModified: Feb 16, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -21,9 +21,10 @@
 module hprose;
 @safe:
 
-public import hprose.tags;
-public import hprose.common;
-public import hprose.classmanager;
 public import hprose.bytes;
-public import hprose.writer;
+public import hprose.classmanager;
+public import hprose.common;
 public import hprose.reader;
+public import hprose.tags;
+public import hprose.writer;
+

@@ -21,10 +21,10 @@
 module hprose.common;
 @safe:
 
-import std.typecons;
-import std.traits;
-import std.typetuple;
 import std.stdio;
+import std.traits;
+import std.typecons;
+import std.typetuple;
 
 enum ResultMode {
     Normal, Serialized, Raw, RawWithEndTag
