@@ -86,14 +86,14 @@ private synchronized class classmanager {
     TypeInfo getClass(string name) {
         return (cast(TypeInfo[string])nameCache).get(name, null);
     }
-    Unserializer getUnserializer(TypeInfo t, Reader reader) {
+    string getAlias(T)() {
+        return (cast(string[TypeInfo])typeCache).get(typeid(Unqual!T), register!T(Unqual!T.stringof));
+    }
+    package Unserializer getUnserializer(TypeInfo t, Reader reader) {
         if (t in unserializerCache) {
             return unserializerCache[t](reader);
         }
         return null;
-    }
-    string getAlias(T)() {
-        return (cast(string[TypeInfo])typeCache).get(typeid(Unqual!T), register!T(Unqual!T.stringof));
     }
 }
 
