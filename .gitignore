@@ -2,3 +2,4 @@
 *.exe
 *.obj
 *.lib
+*.a

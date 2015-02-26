@@ -735,5 +735,7 @@ unittest {
     bytes.init("");
     rw.reset();
     rw.writeTuple(Color.Red, Color.Blue, Color.Green);
-    assert(bytes.toString() == "a3{012}");
+    rw.serialize(tuple(Color.Red, Color.Blue, Color.Green));
+    rw.writeArray(tuple(Color.Red, Color.Blue, Color.Green));
+    assert(bytes.toString() == "a3{012}a3{012}a3{012}");
 }
