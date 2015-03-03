@@ -9,27 +9,29 @@
 
 /**********************************************************\
  *                                                        *
- * hprose/reader.d                                        *
+ * hprose/io/reader.d                                     *
  *                                                        *
  * hprose reader library for D.                           *
  *                                                        *
- * LastModified: Feb 16, 2015                             *
+ * LastModified: Mar 3, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
-module hprose.reader;
+module hprose.io.reader;
+
 @trusted:
 
-import hprose.bytes;
-import hprose.classmanager;
-import hprose.common;
-import hprose.tags;
+import hprose.io.bytes;
+import hprose.io.classmanager;
+import hprose.io.common;
+import hprose.io.tags;
 import std.algorithm;
 import std.bigint;
 import std.container;
 import std.conv;
 import std.datetime;
+import std.exception;
 import std.json;
 import std.math;
 import std.stdio;
@@ -557,6 +559,9 @@ class Reader : RawReader {
             return unserialize!T(tag);
         }
     }
+    void unserialize(T = void)() if (is(T == void)) {
+        unserialize!Variant(tag);
+    }
     T readIntegerWithoutTag(T)() if (isIntegral!T) {
         return cast(T)_bytes.readInt!(Unqual!T)(TagSemicolon);
     }
@@ -796,8 +801,23 @@ class Reader : RawReader {
         return readObject!T(_bytes.read());
     }
     void readTuple(T...)(ref T args) {
+        char tag = _bytes.read();
+        enforce(tag == TagList, unexpectedTag(tag));
+        int len = _bytes.readInt(TagOpenbrace);
+        int n = min(len, args.length);
         setRef(null);
-        foreach (ref arg; args) arg = unserialize!(typeof(arg))();
+        static if (args.length > 0) {
+            foreach (i, ref arg; args) {
+                if (i < n) {
+                    arg = unserialize!(typeof(arg))();
+                }
+            }
+        }
+        if (args.length < len) {
+            for (int i = args.length; i < len; ++i) {
+                unserialize!Variant();
+            }
+        }
         _bytes.skip(1);
     }
 }
@@ -889,7 +909,7 @@ unittest {
 }
 
 unittest {
-    import hprose.writer;
+    import hprose.io.writer;
     BytesIO bytes = new BytesIO();
     Writer writer = new Writer(bytes);
     for (int i = 0; i < 16; i++) writer.serialize(-1234567890);
@@ -914,7 +934,7 @@ unittest {
 }
 
 unittest {
-    import hprose.writer;
+    import hprose.io.writer;
     BytesIO bytes = new BytesIO();
     Writer writer = new Writer(bytes);
     for (int i = 0; i < 6; i++) writer.serialize(BigInt("1234567890987654321234567890987654321"));
@@ -934,7 +954,7 @@ unittest {
 }
 
 unittest {
-    import hprose.writer;
+    import hprose.io.writer;
     BytesIO bytes = new BytesIO();
     Writer writer = new Writer(bytes);
     for (int i = 0; i < 6; i++) writer.serialize(-3.1415926);
@@ -954,7 +974,7 @@ unittest {
 }
 
 unittest {
-    import hprose.writer;
+    import hprose.io.writer;
     BytesIO bytes = new BytesIO();
     Writer writer = new Writer(bytes);
     for (int i = 0; i < 6; i++) writer.serialize("123");
@@ -974,7 +994,7 @@ unittest {
 }
 
 unittest {
-    import hprose.writer;
+    import hprose.io.writer;
     BytesIO bytes = new BytesIO();
     Writer writer = new Writer(bytes);
     for (int i = 0; i < 6; i++) writer.serialize([1,2,3,4,5,6,7]);
@@ -1011,11 +1031,11 @@ private {
 }
 
 unittest {
-    import hprose.writer;
+    import hprose.io.writer;
     BytesIO bytes = new BytesIO();
     Writer writer = new Writer(bytes);
     for (int i = 0; i < 6; i++) writer.serialize(["Jane": 10.0, "Jack":20, "Bob":15]);
-    writer.serialize(hprose.reader.MyStruct(13));
+    writer.serialize(hprose.io.reader.MyStruct(13));
     Reader reader = new Reader(bytes);
     assert(reader.unserialize!(int[string])() == ["Jane": 10, "Jack":20, "Bob":15]);
     assert(reader.unserialize!(double[string])() == cast(double[string])["Jane": 10, "Jack":20, "Bob":15]);
@@ -1044,7 +1064,7 @@ unittest {
 }
 
 unittest {
-    import hprose.writer;
+    import hprose.io.writer;
     import std.math;
     BytesIO bytes = new BytesIO();
     Writer writer = new Writer(bytes);
@@ -1061,7 +1081,7 @@ unittest {
     writer.serialize(Date(2015, 2, 8));
     writer.serialize(variantArray(1, "Hello", 3.14, Date(2015, 2, 8)));
     writer.serialize(["name": JSONValue("张三"), "age": JSONValue(18)]);
-    writer.serialize(hprose.reader.MyStruct(13));
+    writer.serialize(hprose.io.reader.MyStruct(13));
     Reader reader = new Reader(bytes);
     JSONValue jv = reader.unserialize!(JSONValue)();
     assert(jv == JSONValue(1));
@@ -1099,7 +1119,7 @@ unittest {
 }
 
 unittest {
-    import hprose.writer;
+    import hprose.io.writer;
     import std.math;
     BytesIO bytes = new BytesIO();
     Writer writer = new Writer(bytes);
@@ -1116,7 +1136,7 @@ unittest {
     writer.serialize(Date(2015, 2, 8));
     writer.serialize(variantArray(1, "Hello", 3.14, Date(2015, 2, 8)));
     writer.serialize([JSONValue("张三"): "name", JSONValue(18):"age"]);
-    writer.serialize(hprose.reader.MyStruct(12));
+    writer.serialize(hprose.io.reader.MyStruct(12));
     Reader reader = new Reader(bytes);
     Variant v = reader.unserialize!(Variant)();
     assert(v == Variant(1));
@@ -1149,19 +1169,19 @@ unittest {
     assert(v.get!(Variant[Variant])[Variant("张三")] == "name");
     assert(v.get!(Variant[Variant])[Variant(18)] == "age");
     v = reader.readVariant!(Variant)();
-    assert(v.get!(hprose.reader.MyStruct)() == hprose.reader.MyStruct(12));
+    assert(v.get!(hprose.io.reader.MyStruct)() == hprose.io.reader.MyStruct(12));
 }
 
 unittest {
     BytesIO bytes = new BytesIO("c8\"MyStruct\"1{s1\"c\"}o0{5}c7\"MyClass\"1{s1\"x\"}o1{5}m2{s1\"a\"5s1\"x\"2}");
     Reader reader = new Reader(bytes);
-    hprose.reader.MyStruct mystruct = reader.unserialize!(hprose.reader.MyStruct)();
-    hprose.reader.MyClass myclass = reader.unserialize!(hprose.reader.MyClass)();
+    hprose.io.reader.MyStruct mystruct = reader.unserialize!(hprose.io.reader.MyStruct)();
+    hprose.io.reader.MyClass myclass = reader.unserialize!(hprose.io.reader.MyClass)();
     assert(mystruct.a == 0);
     assert(mystruct.c == 5);
     assert(myclass.a == 1);
     assert(myclass.x == 5);
-    hprose.reader.MyClass myclass2 = reader.unserialize!(hprose.reader.MyClass)();
+    hprose.io.reader.MyClass myclass2 = reader.unserialize!(hprose.io.reader.MyClass)();
     assert(myclass2.a == 5);
     assert(myclass2.x == 2);
 }
@@ -1169,11 +1189,9 @@ unittest {
 unittest {
     BytesIO bytes = new BytesIO("a3{1s5\"Hello\"r1;}");
     Reader reader = new Reader(bytes);
-    bytes.read();
-    bytes.readInt(TagOpenbrace);
-    Tuple!(int, string, string) value;
+    Tuple!(int, string, string, int) value;
     reader.readTuple(value.expand);
-    assert(value == tuple(1, "Hello", "Hello"));
+    assert(value == tuple(1, "Hello", "Hello", 0));
 }
 
 unittest {
@@ -1182,8 +1200,6 @@ unittest {
     }
     BytesIO bytes = new BytesIO("a3{012}");
     Reader reader = new Reader(bytes);
-    bytes.read();
-    bytes.readInt(TagOpenbrace);
     Tuple!(Color, Color, Color) value;
     reader.readTuple(value.expand);
     assert(value == tuple(Color.Red, Color.Blue, Color.Green));

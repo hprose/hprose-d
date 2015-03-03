@@ -9,19 +9,20 @@
 
 /**********************************************************\
  *                                                        *
- * hprose/bytes.d                                         *
+ * hprose/io/bytes.d                                      *
  *                                                        *
  * hprose bytes io library for D.                         *
  *                                                        *
- * LastModified: Feb 15, 2015                             *
+ * LastModified: Mar 3, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
-module hprose.bytes;
+module hprose.io.bytes;
+
 @trusted:
 
-import hprose.tags;
+import hprose.io.tags;
 import std.algorithm;
 import std.bigint;
 import std.conv;

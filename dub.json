@@ -6,5 +6,7 @@
     "license":     "MIT",
     "copyright":   "Copyright (c) 2014-2015 http://hprose.com",
     "targetType":  "library",
-    "lflags":      ["-lcurl"]
+	"dependencies": {
+		"vibe-d": "~>0.7.22"
+	},
 }

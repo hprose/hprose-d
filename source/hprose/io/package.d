@@ -9,16 +9,22 @@
 
 /**********************************************************\
  *                                                        *
- * hprose/package.d                                       *
+ * hprose/io/package.d                                    *
  *                                                        *
- * hprose for D.                                          *
+ * hprose IO for D.                                       *
  *                                                        *
  * LastModified: Mar 3, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
-module hprose;
+module hprose.io;
 
-public import hprose.io;
-public import hprose.rpc;
+@safe
+
+public import hprose.io.bytes;
+public import hprose.io.classmanager;
+public import hprose.io.common;
+public import hprose.io.reader;
+public import hprose.io.tags;
+public import hprose.io.writer;

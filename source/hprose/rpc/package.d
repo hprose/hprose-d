@@ -9,16 +9,19 @@
 
 /**********************************************************\
  *                                                        *
- * hprose/package.d                                       *
+ * hprose/rpc/package.d                                   *
  *                                                        *
- * hprose for D.                                          *
+ * hprose RPC for D.                                      *
  *                                                        *
  * LastModified: Mar 3, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
-module hprose;
+module hprose.rpc;
 
-public import hprose.io;
-public import hprose.rpc;
+public import hprose.rpc.client;
+public import hprose.rpc.common;
+public import hprose.rpc.context;
+public import hprose.rpc.filter;
+public import hprose.rpc.httpclient;

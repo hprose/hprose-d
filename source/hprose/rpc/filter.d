@@ -1,4 +1,4 @@
-/**********************************************************\
+﻿/**********************************************************\
 |                                                          |
 |                          hprose                          |
 |                                                          |
@@ -9,16 +9,20 @@
 
 /**********************************************************\
  *                                                        *
- * hprose/package.d                                       *
+ * hprose/rpc/filter.d                                    *
  *                                                        *
- * hprose for D.                                          *
+ * hprose filter interface for D.                         *
  *                                                        *
  * LastModified: Mar 3, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
-module hprose;
+module hprose.rpc.filter;
 
-public import hprose.io;
-public import hprose.rpc;
+import hprose.rpc.context;
+
+interface Filter {
+    ubyte[] inputFilter(ubyte[] data, Context context);
+    ubyte[] outputFilter(ubyte[] data, Context context);
+}

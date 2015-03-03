@@ -1,4 +1,4 @@
-/**********************************************************\
+﻿/**********************************************************\
 |                                                          |
 |                          hprose                          |
 |                                                          |
@@ -9,16 +9,25 @@
 
 /**********************************************************\
  *                                                        *
- * hprose/package.d                                       *
+ * hprose/rpc/context.d                                   *
  *                                                        *
- * hprose for D.                                          *
+ * hprose context interface for D.                        *
  *                                                        *
- * LastModified: Mar 3, 2015                              *
+ * LastModified: Mar 1, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
-module hprose;
+module hprose.rpc.context;
 
-public import hprose.io;
-public import hprose.rpc;
+import std.variant;
+
+class Context {
+    public Variant[string] userdata;
+    T get(T)(string key) {
+        return userdata.get!(T)(key);
+    }
+    void set(T)(string key, T value) {
+        userdata[key] = Variant!T(value);
+    }
+}

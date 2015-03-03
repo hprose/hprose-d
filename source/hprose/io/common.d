@@ -9,26 +9,22 @@
 
 /**********************************************************\
  *                                                        *
- * hprose/common.d                                        *
+ * hprose/io/common.d                                     *
  *                                                        *
  * hprose common library for D.                           *
  *                                                        *
- * LastModified: Feb 15, 2015                             *
+ * LastModified: Mar 3, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
-module hprose.common;
+module hprose.io.common;
 @safe:
 
 import std.stdio;
 import std.traits;
 import std.typecons;
 import std.typetuple;
-
-enum ResultMode {
-    Normal, Serialized, Raw, RawWithEndTag
-}
 
 template isSerializable(T) {
     alias U = Unqual!T;
@@ -76,7 +72,6 @@ template getSerializableFields(T) if (is(T == struct) || is(T == class)) {
         static assert(0, T.stringof ~ " has no fields");
     }
 }
-
 
 private {
 

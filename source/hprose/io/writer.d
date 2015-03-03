@@ -9,22 +9,23 @@
 
 /**********************************************************\
  *                                                        *
- * hprose/writer.d                                        *
+ * hprose/io/writer.d                                     *
  *                                                        *
  * hprose writer library for D.                           *
  *                                                        *
- * LastModified: Feb 16, 2015                             *
+ * LastModified: Mar 3, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
-module hprose.writer;
+module hprose.io.writer;
+
 @trusted:
 
-import hprose.bytes;
-import hprose.classmanager;
-import hprose.common;
-import hprose.tags;
+import hprose.io.bytes;
+import hprose.io.classmanager;
+import hprose.io.common;
+import hprose.io.tags;
 import std.bigint;
 import std.container;
 import std.datetime;

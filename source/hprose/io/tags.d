@@ -9,16 +9,16 @@
 
 /**********************************************************\
  *                                                        *
- * hprose/tags.d                                          *
+ * hprose/io/tags.d                                       *
  *                                                        *
  * hprose tags for D.                                     *
  *                                                        *
- * LastModified: Aug 1, 2014                              *
+ * LastModified: Mar 3, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
-module hprose.tags;
+module hprose.io.tags;
 @safe:
 
 enum

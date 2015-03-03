@@ -9,20 +9,21 @@
 
 /**********************************************************\
  *                                                        *
- * hprose/classmanager.d                                  *
+ * hprose/io/classmanager.d                               *
  *                                                        *
  * hprose classmanager library for D.                     *
  *                                                        *
- * LastModified: Feb 15, 2015                             *
+ * LastModified: Mar 3, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
-module hprose.classmanager;
+module hprose.io.classmanager;
+
 @trusted:
 
-import hprose.common;
-import hprose.reader;
+import hprose.io.common;
+import hprose.io.reader;
 import std.container.util;
 import std.stdio;
 import std.traits;
