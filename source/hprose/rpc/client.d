@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client library for D.                           *
  *                                                        *
- * LastModified: Mar 3, 2015                              *
+ * LastModified: Mar 4, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -147,7 +147,7 @@ private {
     }
 }
 
-class Client {
+abstract class Client {
     private {
         Filter[] _filters;
         ubyte[] doOutput(bool byref = false, bool simple = false, Args...)(string name, Context context, ref Args args) {
