@@ -13,7 +13,7 @@
  *                                                        *
  * hprose classmanager library for D.                     *
  *                                                        *
- * LastModified: Mar 3, 2015                              *
+ * LastModified: Jul 15, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,7 +24,6 @@ module hprose.io.classmanager;
 
 import hprose.io.common;
 import hprose.io.reader;
-import std.container.util;
 import std.stdio;
 import std.traits;
 import std.variant;
@@ -48,7 +47,7 @@ private synchronized class classmanager {
             unserializerCache[typeid(Unqual!T)] = delegate(Reader reader) {
                 class UnserializerImpl: Unserializer {
                     private {
-                        Unqual!T value = make!(Unqual!T);
+                        Unqual!T value = make!(Unqual!T)();
                         @safe void delegate()[string] setters;
                     }
                     this() {

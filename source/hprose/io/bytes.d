@@ -13,7 +13,7 @@
  *                                                        *
  * hprose bytes io library for D.                         *
  *                                                        *
- * LastModified: Mar 3, 2015                              *
+ * LastModified: Jul 15, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -33,12 +33,12 @@ import std.traits;
 class BytesIO {
     private {
         char[] _buffer;
-        long _pos;
+        int _pos;
     }
 
     @property {
-        long size() {
-            return _buffer.length;
+        int size() {
+            return cast(int)_buffer.length;
         }
         bool eof() {
             return _pos >= size;
@@ -98,7 +98,7 @@ class BytesIO {
         return result;
     }
     string readUTF8Char() {
-        long pos = _pos;
+        int pos = _pos;
         ubyte tag = read();
         switch (tag >> 4) {
             case 0: .. case 7: break;
@@ -110,7 +110,7 @@ class BytesIO {
         return cast(string)_buffer[pos .. _pos];
     }
     T readString(T = string)(int wlen) if (isSomeString!T) {
-        long pos = _pos;
+        int pos = _pos;
         for (int i = 0; i < wlen; ++i) {
             ubyte tag = read();
             switch (tag >> 4) {
@@ -128,7 +128,7 @@ class BytesIO {
         int c = read();
         if (c == tag) return 0;
         T result = 0;
-        long len = size;
+        int len = size;
         T sign = 1;
         switch (c) {
             case TagNeg: sign = -1; goto case TagPos;

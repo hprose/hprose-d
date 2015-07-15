@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer library for D.                           *
  *                                                        *
- * LastModified: Mar 3, 2015                              *
+ * LastModified: Jul 15, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -35,6 +35,7 @@ import std.stdio;
 import std.string;
 import std.traits;
 import std.typecons;
+import std.typetuple;
 import std.utf;
 import std.uuid;
 import std.variant;

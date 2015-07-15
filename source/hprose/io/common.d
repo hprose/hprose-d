@@ -13,7 +13,7 @@
  *                                                        *
  * hprose common library for D.                           *
  *                                                        *
- * LastModified: Mar 3, 2015                              *
+ * LastModified: Jul 15, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,6 +25,19 @@ import std.stdio;
 import std.traits;
 import std.typecons;
 import std.typetuple;
+
+template make(T)
+if (is(T == struct) || is(T == class)) {
+    T make(Args...)(Args arguments)
+    if (is(T == struct) && __traits(compiles, T(arguments))) {
+        return T(arguments);
+    }
+    
+    T make(Args...)(Args arguments)
+    if (is(T == class) && __traits(compiles, new T(arguments))) {
+        return new T(arguments);
+    }
+}
 
 template isSerializable(T) {
     alias U = Unqual!T;
