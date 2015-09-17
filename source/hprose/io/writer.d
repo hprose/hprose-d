@@ -265,12 +265,16 @@ class Writer {
                 alias TypeTuple!(byte, ubyte, short, ushort, int, uint, long, ulong,
                     float, double, real, bool, char, wchar, dchar,
                     BigInt, DateTime, Date, TimeOfDay, SysTime,
-                    UUID, Variant, JSONValue) typeTuple;
+                    UUID, Variant, JSONValue) valueTypeTuple;
+                alias TypeTuple!(byte, ubyte, short, ushort, int, uint, long, ulong,
+                    float, double, real, bool, char, wchar, dchar,
+                    BigInt, DateTime, Date, TimeOfDay, SysTime,
+                    UUID, Variant) keyTypeTuple;
                 TypeInfo type = value.type();
                 if (type is typeid(null)) {
                     return writeNull();
                 }
-                foreach(V; typeTuple) {
+                foreach(V; valueTypeTuple) {
                     if (type is typeid(V)) {
                         return serialize(v.get!(V));
                     }
@@ -283,7 +287,7 @@ class Writer {
                     else if (type is typeid(immutable(V)[])) {
                         return serialize(v.get!(immutable(V)[]));
                     }
-                    foreach(K; typeTuple) {
+                    foreach(K; keyTypeTuple) {
                         if (type is typeid(V[K])) {
                             return serialize(v.get!(V[K]));
                         }

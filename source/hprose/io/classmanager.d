@@ -13,14 +13,12 @@
  *                                                        *
  * hprose classmanager library for D.                     *
  *                                                        *
- * LastModified: Jul 15, 2015                             *
+ * LastModified: Sep 17, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
 module hprose.io.classmanager;
-
-@trusted:
 
 import hprose.io.common;
 import hprose.io.reader;
