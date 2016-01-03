@@ -7,6 +7,6 @@
     "copyright":   "Copyright (c) 2014-2015 http://hprose.com",
     "targetType":  "library",
 	"dependencies": {
-		"vibe-d": "~>0.7.24"
+		"vibe-d": "~>0.7.26"
 	},
 }
