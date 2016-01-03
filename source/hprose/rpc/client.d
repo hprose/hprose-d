@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client library for D.                           *
  *                                                        *
- * LastModified: Mar 4, 2015                              *
+ * LastModified: Jan 3, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -32,12 +32,10 @@ import std.typecons;
 import std.variant;
 
 private {
-    pure string generate(T, string namespace)() {
-        alias FA = FunctionAttribute;
-        alias STC = ParameterStorageClass;
-        string code = "new class T {\n";
-        enum methods = getAbstractMethods!(T);
-        foreach(m; methods) {
+    pure string generateMethods(alias methods, T, string namespace)(string code) {
+        static if (methods.length > 0) {
+            alias STC = ParameterStorageClass;
+            enum m = methods[0];
             foreach(mm; __traits(getVirtualMethods, T, m)) {
                 string name = m;
                 ResultMode mode = ResultMode.Normal;
@@ -100,7 +98,7 @@ private {
                             static assert(0, "can't support this callback type: " ~ Callback.stringof);
                         }
                         code ~= "ResultMode." ~ to!string(mode) ~ ", " ~
-                                to!string(simple) ~ ")(\"";
+                            to!string(simple) ~ ")(\"";
                     }
                     else {
                         code ~= "        invoke!(" ~ returntype.stringof ~ ", " ~
@@ -130,9 +128,15 @@ private {
                 code ~= ");\n";
                 code ~= "    }\n";
             }
+            static if (methods.length > 1) {
+                code = generateMethods!(tuple(methods[1..$]), T, namespace)(code);
+            }
         }
-        code ~= "}\n";
         return code;
+    }
+
+    pure string generate(T, string namespace)() {
+        return generateMethods!(getAbstractMethods!(T), T, namespace)("new class T {\n") ~ "}\n";
     }
 
     pure string asyncInvoke(bool byref, bool hasargs)() {

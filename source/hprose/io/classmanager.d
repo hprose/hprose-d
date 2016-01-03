@@ -13,7 +13,7 @@
  *                                                        *
  * hprose classmanager library for D.                     *
  *                                                        *
- * LastModified: Sep 17, 2015                             *
+ * LastModified: Jan 3, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,6 +25,7 @@ import hprose.io.reader;
 import std.stdio;
 import std.traits;
 import std.variant;
+import std.typecons;
 
 package interface Unserializer {
     Variant get();
@@ -48,13 +49,19 @@ private synchronized class classmanager {
                         Unqual!T value = make!(Unqual!T)();
                         @safe void delegate()[string] setters;
                     }
-                    this() {
-                        enum fieldList = getSerializableFields!(Unqual!T);
-                        foreach(f; fieldList) {
+                    private void genSetters(alias fieldList)() {
+                        static if (fieldList.length > 0) {
+                            enum f = fieldList[0];
                             setters[f] = delegate() {
                                 __traits(getMember, value, f) = reader.unserialize!(typeof(__traits(getMember, value, f)))();
                             };
+                            static if (fieldList.length > 1) {
+                                genSetters!(tuple(fieldList[1..$]))();
+                            }
                         }
+                    }
+                    this() {
+                        genSetters!(getSerializableFields!(Unqual!T))();
                     }
                     Variant get() {
                         return Variant(value);

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer library for D.                           *
  *                                                        *
- * LastModified: Jul 15, 2015                             *
+ * LastModified: Jan 3, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -534,6 +534,15 @@ class Writer {
         if (!_refer.write(cast(any)value)) writeAssociativeArray(value);
     }
     alias writeAssociativeArrayWithRef writeMapWithRef;
+    private void serializeFields(alias fieldList, T)(T value) {
+        static if (fieldList.length > 0) {
+            enum f = fieldList[0];
+            serialize(__traits(getMember, value, f));
+            static if (fieldList.length > 1) {
+                serializeFields!(tuple(fieldList[1..$]), T)(value);
+            }
+        }
+    }
     void writeObject(T)(T value) if (is(T == struct) || is(T == class)) {
         string name = ClassManager.getAlias!T;
         int index = _classref.get(name, writeClass!T(name));
@@ -544,10 +553,7 @@ class Writer {
             _refer.set(cast(any)value);
         }
         _bytes.write(TagObject).write(index).write(TagOpenbrace);
-        enum fieldList = getSerializableFields!T;
-        foreach(f; fieldList) {
-            serialize(__traits(getMember, value, f));
-        }
+        serializeFields!(getSerializableFields!T, T)(value);
         _bytes.write(TagClosebrace);
     }
     void writeObjectWithRef(T)(T value) if (is(T == struct) || is(T == class)) {
