@@ -1,9 +1,9 @@
 ﻿language: d
 
 d:
-  - dmd-2.069.2
-  - dmd-2.068.2
-  - dmd-2.067.1
+  - dmd
+  - gdc
+  - ldc
 
 script:
   - dub test --compiler=$DC
