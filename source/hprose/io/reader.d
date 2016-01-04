@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader library for D.                           *
  *                                                        *
- * LastModified: Sep 17, 2015                             *
+ * LastModified: Jan 4, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -624,10 +624,10 @@ class Reader : RawReader {
             else {
                 SysTime result;
                 if (tag == TagUTC) {
-                    result = SysTime(DateTime(year, month, day, hour, minute, second), FracSec.from!"hnsecs"(hnsecs), UTC());
+                    result = SysTime(DateTime(year, month, day, hour, minute, second), std.datetime.hnsecs(hnsecs), UTC());
                 }
                 else {
-                    result = SysTime(DateTime(year, month, day, hour, minute, second), FracSec.from!"hnsecs"(hnsecs), LocalTime());
+                    result = SysTime(DateTime(year, month, day, hour, minute, second), std.datetime.hnsecs(hnsecs), LocalTime());
                 }
             }
         }
@@ -665,10 +665,10 @@ class Reader : RawReader {
         else {
             SysTime result;
             if (tag == TagUTC) {
-                result = SysTime(DateTime(year, month, day, hour, minute, second), FracSec.from!"hnsecs"(hnsecs), UTC());
+                result = SysTime(DateTime(year, month, day, hour, minute, second), std.datetime.hnsecs(hnsecs), UTC());
             }
             else {
-                result = SysTime(DateTime(year, month, day, hour, minute, second), FracSec.from!"hnsecs"(hnsecs), LocalTime());
+                result = SysTime(DateTime(year, month, day, hour, minute, second), std.datetime.hnsecs(hnsecs), LocalTime());
             }
         }
         setRef(result);

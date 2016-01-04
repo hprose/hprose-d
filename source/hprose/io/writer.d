@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer library for D.                           *
  *                                                        *
- * LastModified: Jan 3, 2016                              *
+ * LastModified: Jan 4, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -118,7 +118,7 @@ class Writer {
         int[string] _classref;
         int _crcount = 0;
 
-        pure string hnsecsToString(int hnsecs) {
+        pure string hnsecsToString(long hnsecs) {
             if (hnsecs == 0) return "";
             if (hnsecs % 10000 == 0) {
                 return TagPoint ~ format("%03d", hnsecs / 10000);
@@ -410,7 +410,7 @@ class Writer {
         if (isLocalTime || tzType is typeid(UTC)) {
             _refer.set(null);
             const char tag = isLocalTime ? TagSemicolon : TagUTC;
-            int hnsecs = value.fracSec.hnsecs;
+            long hnsecs = value.fracSecs.split!("hnsecs").hnsecs;
             Date date = Date(value.year, value.month, value.day);
             TimeOfDay time = TimeOfDay(value.hour, value.minute, value.second);
             if (time == TimeOfDay(0, 0, 0) && hnsecs == 0) {
@@ -656,11 +656,11 @@ unittest {
     assert(bytes.toString() == "D19801201T174854Z");
 
     bytes.init("");
-    rw.serialize(SysTime(DateTime(1980, 12, 01, 17, 48, 54), FracSec.from!"usecs"(802_400)));
+    rw.serialize(SysTime(DateTime(1980, 12, 01, 17, 48, 54), std.datetime.usecs(802_400)));
     assert(bytes.toString() == "D19801201T174854.802400;");
 
     bytes.init("");
-    rw.serialize(SysTime(DateTime(1980, 12, 01, 17, 48, 54), FracSec.from!"usecs"(802_4), UTC()));
+    rw.serialize(SysTime(DateTime(1980, 12, 01, 17, 48, 54), std.datetime.usecs(802_4), UTC()));
     assert(bytes.toString() == "D19801201T174854.008024Z");
 
     bytes.init("");
