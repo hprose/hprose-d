@@ -1,5 +1,6 @@
 # Hprose for D
 
+[![Build Status](https://travis-ci.org/hprose/hprose-d.svg)](https://travis-ci.org/hprose/hprose-d)
 [![Join the chat at https://gitter.im/hprose/hprose-d](https://img.shields.io/badge/GITTER-join%20chat-green.svg)](https://gitter.im/hprose/hprose-d?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![DUB](https://img.shields.io/dub/v/hprose-d.svg)](http://code.dlang.org/packages/hprose-d)
 [![DUB](https://img.shields.io/dub/l/hprose-d.svg)](http://code.dlang.org/packages/hprose-d)
