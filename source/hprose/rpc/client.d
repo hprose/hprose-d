@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client library for D.                           *
  *                                                        *
- * LastModified: Jan 3, 2016                              *
+ * LastModified: Jan 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -82,7 +82,10 @@ private {
                     static if (paramTypes.length > 0 && is(paramTypes[$-1] == return)) {
                         alias Callback = paramTypes[$-1];
                         alias callbackParams = ParameterTypeTuple!Callback;
-                        static if (callbackParams.length == 1) {
+                        static if (callbackParams.length == 0) {
+                            code ~= "        invoke(\"";
+                        }
+                        else static if (callbackParams.length == 1) {
                             code ~= "        invoke!(" ~ Callback.stringof ~ ", ";
                         }
                         else static if (callbackParams.length > 1) {
@@ -97,8 +100,10 @@ private {
                         else {
                             static assert(0, "can't support this callback type: " ~ Callback.stringof);
                         }
-                        code ~= "ResultMode." ~ to!string(mode) ~ ", " ~
-                            to!string(simple) ~ ")(\"";
+                        static if (callbackParams.length > 0) {
+                            code ~= "ResultMode." ~ to!string(mode) ~ ", " ~
+                                to!string(simple) ~ ")(\"";
+                        }
                     }
                     else {
                         code ~= "        invoke!(" ~ returntype.stringof ~ ", " ~
@@ -139,14 +144,26 @@ private {
         return generateMethods!(getAbstractMethods!(T), T, namespace)("new class T {\n") ~ "}\n";
     }
 
-    pure string asyncInvoke(bool byref, bool hasargs)() {
+    pure string asyncInvoke(bool byref, bool hasresult, bool hasargs)() {
         string code = "foreach(T; Args) static assert(isSerializable!T);\n";
-        code ~= "auto context = new Context();\n";
-        code ~= "auto request = doOutput!(" ~ to!string(byref) ~ ", simple)(name, context, args);\n";
-        code ~= "sendAndReceive(request, delegate(ubyte[] response) {\n";
-        code ~= "        auto result = doInput!(Result, mode)(response, context, args);\n";
-        code ~= "        callback(result" ~ (hasargs ? ", args" : "") ~ ");\n";
+        code ~= "try {\n";
+        code ~= "    auto context = new Context();\n";
+        code ~= "    auto request = doOutput!(" ~ to!string(byref) ~ ", simple)(name, context, args);\n";
+        code ~= "    sendAndReceive(request, delegate(ubyte[] response) {\n";
+        code ~= "        try {\n";
+        code ~= "            auto result = doInput!(Result, mode)(response, context, args);\n";
+        code ~= "            if (callback != null) {\n";
+        code ~= "                callback(" ~ (hasresult ? "result" ~ (hasargs ? ", args" : "") : "") ~ ");\n";
+        code ~= "            }\n";
+        code ~= "        }\n";
+        code ~= "        catch(Exception e) {\n";
+        code ~= "            if (onError != null) onError(name, e);\n";
+        code ~= "        }\n";
         code ~= "    });\n";
+        code ~= "}\n";
+        code ~= "catch(Exception e) {\n";
+        code ~= "    if (onError != null) onError(name, e);\n";
+        code ~= "}\n";
         return code;
     }
 }
@@ -225,6 +242,9 @@ abstract class Client {
         abstract ubyte[] sendAndReceive(ubyte[] request);
         abstract void sendAndReceive(ubyte[] request, void delegate(ubyte[]) callback);
     }
+
+    void delegate(string name, Exception e) onError = null;
+
     this(string uri = "") {
         this.uri = uri;
         this._filters = [];
@@ -255,39 +275,51 @@ abstract class Client {
         auto context = new Context();
         auto request = doOutput!(byref, simple)(name, context, args);
         static if (is(Result == void)) {
-            sendAndReceive(request, delegate(ubyte[] response) {
-                    doInput!(Variant, mode)(response, context, args);
-                });
+            doInput!(Variant, mode)(sendAndReceive(request), context, args);
         }
         else {
             return doInput!(Result, mode)(sendAndReceive(request), context, args);
         }
     }
+    void invoke(Args...)
+    (string name, Args args, void delegate() callback) {
+        alias Result = Variant;
+        enum mode = ResultMode.Normal;
+        enum simple = false;
+        mixin(asyncInvoke!(false, false, false));
+    }
     void invoke(Callback, ResultMode mode = ResultMode.Normal, bool simple = false, Args...)
-    (string name, Args args, Callback callback) if (is(Callback R == void delegate(R)) && (mode == ResultMode.Normal || is(Result == ubyte[]))) {
+    (string name, Args args, Callback callback) if (is(Callback R == void delegate(R)) && (mode == ResultMode.Normal || is(R == ubyte[]))) {
         alias Result = ParameterTypeTuple!callback[0];
-        mixin(asyncInvoke!(false, false));
+        mixin(asyncInvoke!(false, true, false));
     }
     void invoke(Result, bool byref = false, ResultMode mode = ResultMode.Normal, bool simple = false, Args...)
     (string name, Args args, void delegate(Result result, Args args) callback) if (args.length > 0 && (mode == ResultMode.Normal || is(Result == ubyte[]))) {
-        mixin(asyncInvoke!(byref, true));
+        mixin(asyncInvoke!(byref, true, true));
     }
     void invoke(Result, bool byref = true, ResultMode mode = ResultMode.Normal, bool simple = false, Args...)
     (string name, ref Args args, void delegate(Result result, ref Args args) callback) if (args.length > 0 && (mode == ResultMode.Normal || is(Result == ubyte[]))) {
-        mixin(asyncInvoke!(byref, true));
+        mixin(asyncInvoke!(byref, true, true));
+    }
+    void invoke(Args...)
+    (string name, Args args, void function() callback) {
+        alias Result = Variant;
+        enum mode = ResultMode.Normal;
+        enum simple = false;
+        mixin(asyncInvoke!(false, false, false));
     }
     void invoke(Callback, ResultMode mode = ResultMode.Normal, bool simple = false, Args...)
-    (string name, Args args, Callback callback) if (is(Callback R == void function(R)) && (mode == ResultMode.Normal || is(Result == ubyte[]))) {
+    (string name, Args args, Callback callback) if (is(Callback R == void function(R)) && (mode == ResultMode.Normal || is(R == ubyte[]))) {
         alias Result = ParameterTypeTuple!callback[0];
-        mixin(asyncInvoke!(false, false));
+        mixin(asyncInvoke!(false, true, false));
     }
     void invoke(Result, bool byref = false, ResultMode mode = ResultMode.Normal, bool simple = false, Args...)
     (string name, Args args, void function(Result result, Args args) callback) if (args.length > 0 && (mode == ResultMode.Normal || is(Result == ubyte[]))) {
-        mixin(asyncInvoke!(byref, true));
+        mixin(asyncInvoke!(byref, true, true));
     }
     void invoke(Result, bool byref = true, ResultMode mode = ResultMode.Normal, bool simple = false, Args...)
     (string name, ref Args args, void function(Result result, ref Args args) callback) if (args.length > 0 && (mode == ResultMode.Normal || is(Result == ubyte[]))) {
-        mixin(asyncInvoke!(byref, true));
+        mixin(asyncInvoke!(byref, true, true));
     }
     @property ref filters() {
         return this._filters;
