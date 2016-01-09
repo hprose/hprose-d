@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http client library for D.                      *
  *                                                        *
- * LastModified: Mar 3, 2015                              *
+ * LastModified: Jan 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -66,8 +66,8 @@ unittest {
     import hprose.rpc.context;
 
     interface Hello {
-        @Simple() @(ResultMode.Normal) string hello(string name);
-        @MethodName("hello") void asyncHello(string name);
+        @Simple() @(ResultMode.Serialized) ubyte[] hello(string name);
+        @MethodName("hello") void asyncHello(string name, void delegate() callback = null);
         void hello(string name, void delegate(string result) callback);
         void hello(string name, void delegate(string result, string name) callback);
         void hello(string name, void delegate(string result, ref string name) callback);
@@ -99,10 +99,12 @@ unittest {
     proxy.hello("proxy async6", function(result, ref arg0) { writeln(result); writeln(arg0); });
 
     client.invoke!(void)("hello", "马秉尧");
+    client.invoke("hello", "async", () {});
     client.invoke("hello", "async1", "async1", delegate(string result) { writeln(result); });
     client.invoke("hello", "async2", "async2", delegate(string result, string arg1, string arg2) { writeln(result); writeln(arg1); writeln(arg2); });
     client.invoke("hello", name, delegate(string result, string arg1) { writeln(result); writeln(arg1); });
     client.invoke("hello", name, delegate(string result, ref string arg1) { writeln(result); writeln(arg1); });
+    client.invoke("hello", "async", function() {});
     client.invoke("hello", "async3", function(string result) { writeln(result); });
     client.invoke("hello", "async4", function(string result, string arg1) { writeln(result); writeln(arg1); });
     client.invoke("hello", name, function(string result, string arg1) { writeln(result); writeln(arg1); });
