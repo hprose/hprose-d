@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer library for D.                           *
  *                                                        *
- * LastModified: Jan 4, 2016                              *
+ * LastModified: Jan 9, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -146,6 +146,8 @@ class Writer {
             return index;
         }
     }
+
+    @property BytesIO stream() { return _bytes; }
 
     this(BytesIO bytes, bool simple = false) {
         _bytes = bytes;
