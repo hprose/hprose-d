@@ -86,16 +86,15 @@ private {
                             code ~= "        invoke(\"";
                         }
                         else static if (callbackParams.length == 1) {
-                            code ~= "        invoke!(" ~ Callback.stringof ~ ", ";
+                            code ~= "        invoke!(";
                         }
                         else static if (callbackParams.length > 1) {
-                            code ~= "        invoke!(" ~ ParameterTypeTuple!Callback[0].stringof ~ ", ";
                             foreach(s; ParameterStorageClassTuple!Callback) {
                                 static if (s == STC.out_ || s == STC.ref_) {
                                     byref = true;
                                 }
                             }
-                            code ~= to!string(byref) ~ ", ";
+                            code ~= "        invoke!(" ~ to!string(byref) ~ ", ";
                         }
                         else {
                             static assert(0, "can't support this callback type: " ~ Callback.stringof);
@@ -171,7 +170,7 @@ private {
 abstract class Client {
     private {
         Filter[] _filters;
-        ubyte[] doOutput(bool byref = false, bool simple = false, Args...)(string name, Context context, ref Args args) {
+        ubyte[] doOutput(bool byref, bool simple, Args...)(string name, Context context, ref Args args) {
             auto bytes = new BytesIO();
             auto writer = new Writer(bytes, simple);
             bytes.write(TagCall);
@@ -191,7 +190,7 @@ abstract class Client {
             }
             return request;
         }
-        Result doInput(Result, ResultMode mode = ResultMode.Normal, Args...)(ubyte[]response, Context context, ref Args args) if (mode == ResultMode.Normal || is(Result == ubyte[])) {
+        Result doInput(Result, ResultMode mode, Args...)(ubyte[]response, Context context, ref Args args) if (mode == ResultMode.Normal || is(Result == ubyte[])) {
             foreach_reverse(filter; filters) {
                 response = filter.inputFilter(response, context);
             }
@@ -288,16 +287,16 @@ abstract class Client {
         enum simple = false;
         mixin(asyncInvoke!(false, false, false));
     }
-    void invoke(Callback, ResultMode mode = ResultMode.Normal, bool simple = false, Args...)
+    void invoke(ResultMode mode = ResultMode.Normal, bool simple = false, Callback, Args...)
     (string name, Args args, Callback callback) if (is(Callback R == void delegate(R)) && (mode == ResultMode.Normal || is(R == ubyte[]))) {
         alias Result = ParameterTypeTuple!callback[0];
         mixin(asyncInvoke!(false, true, false));
     }
-    void invoke(Result, bool byref = false, ResultMode mode = ResultMode.Normal, bool simple = false, Args...)
+    void invoke(bool byref = false, ResultMode mode = ResultMode.Normal, bool simple = false, Result, Args...)
     (string name, Args args, void delegate(Result result, Args args) callback) if (args.length > 0 && (mode == ResultMode.Normal || is(Result == ubyte[]))) {
         mixin(asyncInvoke!(byref, true, true));
     }
-    void invoke(Result, bool byref = true, ResultMode mode = ResultMode.Normal, bool simple = false, Args...)
+    void invoke(bool byref = true, ResultMode mode = ResultMode.Normal, bool simple = false, Result, Args...)
     (string name, ref Args args, void delegate(Result result, ref Args args) callback) if (args.length > 0 && (mode == ResultMode.Normal || is(Result == ubyte[]))) {
         mixin(asyncInvoke!(byref, true, true));
     }
@@ -308,16 +307,16 @@ abstract class Client {
         enum simple = false;
         mixin(asyncInvoke!(false, false, false));
     }
-    void invoke(Callback, ResultMode mode = ResultMode.Normal, bool simple = false, Args...)
+    void invoke(ResultMode mode = ResultMode.Normal, bool simple = false, Callback, Args...)
     (string name, Args args, Callback callback) if (is(Callback R == void function(R)) && (mode == ResultMode.Normal || is(R == ubyte[]))) {
         alias Result = ParameterTypeTuple!callback[0];
         mixin(asyncInvoke!(false, true, false));
     }
-    void invoke(Result, bool byref = false, ResultMode mode = ResultMode.Normal, bool simple = false, Args...)
+    void invoke(bool byref = false, ResultMode mode = ResultMode.Normal, bool simple = false, Result, Args...)
     (string name, Args args, void function(Result result, Args args) callback) if (args.length > 0 && (mode == ResultMode.Normal || is(Result == ubyte[]))) {
         mixin(asyncInvoke!(byref, true, true));
     }
-    void invoke(Result, bool byref = true, ResultMode mode = ResultMode.Normal, bool simple = false, Args...)
+    void invoke(bool byref = true, ResultMode mode = ResultMode.Normal, bool simple = false, Result, Args...)
     (string name, ref Args args, void function(Result result, ref Args args) callback) if (args.length > 0 && (mode == ResultMode.Normal || is(Result == ubyte[]))) {
         mixin(asyncInvoke!(byref, true, true));
     }

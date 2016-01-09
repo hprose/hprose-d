@@ -69,6 +69,7 @@ unittest {
         @Simple() @(ResultMode.Serialized) ubyte[] hello(string name);
         @MethodName("hello") void asyncHello(string name, void delegate() callback = null);
         void hello(string name, void delegate(string result) callback);
+        @(ResultMode.Serialized) void hello(string name, void delegate(ubyte[] result) callback);
         void hello(string name, void delegate(string result, string name) callback);
         void hello(string name, void delegate(string result, ref string name) callback);
         void hello(string name, void function(string result) callback);
@@ -91,16 +92,17 @@ unittest {
     string name = "world";
     writeln(proxy.hello("proxy sync"));
     proxy.asyncHello("proxy async");
-    proxy.hello("proxy async1", (result) { writeln(result); });
+    proxy.hello("proxy async0", (string result) { writeln(result); });
+    proxy.hello("proxy async1", (ubyte[] result) { writeln(result); });
     proxy.hello("proxy async2", (result, arg0) { writeln(result); writeln(arg0); });
     proxy.hello("proxy async3", (result, ref arg0) { writeln(result); writeln(arg0); });
     proxy.hello("proxy async4", function(result) { writeln(result); });
     proxy.hello("proxy async5", function(result, arg0) { writeln(result); writeln(arg0); });
     proxy.hello("proxy async6", function(result, ref arg0) { writeln(result); writeln(arg0); });
 
-    client.invoke!(void)("hello", "马秉尧");
+    writeln(client.invoke!(string)("hello", "马秉尧"));
     client.invoke("hello", "async", () {});
-    client.invoke("hello", "async1", "async1", delegate(string result) { writeln(result); });
+    client.invoke!(ResultMode.Serialized)("hello", "async1", "async1", delegate(ubyte[] result) { writeln(result); });
     client.invoke("hello", "async2", "async2", delegate(string result, string arg1, string arg2) { writeln(result); writeln(arg1); writeln(arg2); });
     client.invoke("hello", name, delegate(string result, string arg1) { writeln(result); writeln(arg1); });
     client.invoke("hello", name, delegate(string result, ref string arg1) { writeln(result); writeln(arg1); });
