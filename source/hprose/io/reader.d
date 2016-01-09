@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader library for D.                           *
  *                                                        *
- * LastModified: Jan 4, 2016                              *
+ * LastModified: Jan 9, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -117,6 +117,9 @@ class RawReader {
     this(BytesIO bytes) {
         _bytes = bytes;
     }
+
+    @property BytesIO stream() { return _bytes; }
+
     static Exception unexpectedTag(char tag, string expectTags = "") {
         if ((tag != 0) && (expectTags.length != 0)) {
             return new Exception("Tags '" ~ expectTags ~ "' expected, but '" ~ tag ~ "' found in stream");
