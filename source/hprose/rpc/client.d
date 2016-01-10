@@ -185,13 +185,13 @@ abstract class Client {
             bytes.write(TagEnd);
             auto request = cast(ubyte[])(bytes.buffer);
             bytes.close();
-            foreach(filter; filters) {
+            foreach(filter; _filters) {
                 request = filter.outputFilter(request, context);
             }
             return request;
         }
         Result doInput(Result, ResultMode mode, Args...)(ubyte[]response, Context context, ref Args args) if (mode == ResultMode.Normal || is(Result == ubyte[])) {
-            foreach_reverse(filter; filters) {
+            foreach_reverse(filter; _filters) {
                 response = filter.inputFilter(response, context);
             }
             static if (mode == ResultMode.RawWithEndTag) {

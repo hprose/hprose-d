@@ -59,6 +59,9 @@ class BytesIO {
     this() {
         this("");
     }
+    this(BytesIO data) {
+        init(data.buffer);
+    }
     this(string data) {
         init(data);
     }
@@ -167,6 +170,9 @@ class BytesIO {
     }
     BytesIO write(in ubyte[] data) {
         return write(cast(char[])data);
+    }
+    BytesIO write(BytesIO data) {
+        return write(cast(char[])data.buffer);
     }
     BytesIO write(T)(in T x) {
         static if (is(T == char)) {
