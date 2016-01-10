@@ -151,17 +151,17 @@ private {
         code ~= "    sendAndReceive(request, delegate(ubyte[] response) {\n";
         code ~= "        try {\n";
         code ~= "            auto result = doInput!(Result, mode)(response, context, args);\n";
-        code ~= "            if (callback != null) {\n";
+        code ~= "            if (callback !is null) {\n";
         code ~= "                callback(" ~ (hasresult ? "result" ~ (hasargs ? ", args" : "") : "") ~ ");\n";
         code ~= "            }\n";
         code ~= "        }\n";
         code ~= "        catch(Exception e) {\n";
-        code ~= "            if (onError != null) onError(name, e);\n";
+        code ~= "            if (onError !is null) onError(name, e);\n";
         code ~= "        }\n";
         code ~= "    });\n";
         code ~= "}\n";
         code ~= "catch(Exception e) {\n";
-        code ~= "    if (onError != null) onError(name, e);\n";
+        code ~= "    if (onError !is null) onError(name, e);\n";
         code ~= "}\n";
         return code;
     }
