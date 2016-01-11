@@ -11,9 +11,9 @@
  *                                                        *
  * hprose/rpc/context.d                                   *
  *                                                        *
- * hprose context interface for D.                        *
+ * hprose context class for D.                            *
  *                                                        *
- * LastModified: Mar 1, 2015                              *
+ * LastModified: Jan 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
