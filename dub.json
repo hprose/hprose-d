@@ -8,5 +8,5 @@
     "targetType":  "library",
 	"dependencies": {
 		"vibe-d": "~>0.7.26"
-	},
+	}
 }
