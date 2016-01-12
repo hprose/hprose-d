@@ -211,7 +211,8 @@ unittest {
     server.add!("hello")(&hello);
     server.add!(["goodbye", "inc"])(&goodbye, &inc);
     server.add!(["add", "sub", "sum"])(test);
-    server.addMethods!(Test, "test")();
+    server.add!("test", Test)(); // add Test.test method to the server
+    server.add!(Test, "test")(); // add all static methods on Test with prefix "test" to the server
     server.settings.bindAddresses = ["127.0.0.1"];
     server.settings.port = 4444;
     server.settings.sessionStore = new MemorySessionStore();
@@ -251,6 +252,7 @@ unittest {
     assert(proxy.add(1, 2) == 3);
     assert(proxy.sub(1, 2) == -1);
     assert(proxy.sum(1, 2, 3) == 6);
+    assert(proxy.test() == ["Tom", "Jerry"]);
     int n = 0;
     writeln(proxy.inc(n));
     writeln(proxy.inc(n));

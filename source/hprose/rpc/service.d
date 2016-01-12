@@ -259,16 +259,16 @@ class Service {
         addMethod!(name, "", ResultMode.Normal, simple)(obj);
     }
 
-    void addMethod(T, string name, string aliasName = "", ResultMode mode = ResultMode.Normal, bool simple = false)() if (is(T == class) && !isCallable!T) {
+    void addMethod(string name, T, string aliasName = "", ResultMode mode = ResultMode.Normal, bool simple = false)() if (is(T == class) && !isCallable!T) {
         addFunction!((aliasName == "" ? name : aliasName), mode, simple)(mixin("&T." ~ name));
     }
 
-    void addMethod(T, string name, ResultMode mode, bool simple = false)() if (is(T == class) && !isCallable!T) {
-        addMethod!(T, name, "", mode, simple)();
+    void addMethod(string name, T, ResultMode mode, bool simple = false)() if (is(T == class) && !isCallable!T) {
+        addMethod!(name, T, "", mode, simple)();
     }
 
-    void addMethod(T, string name, bool simple)() if (is(T == class) && !isCallable!T) {
-        addMethod!(T, name, "", ResultMode.Normal, simple)();
+    void addMethod(string name, T, bool simple)() if (is(T == class) && !isCallable!T) {
+        addMethod!(name, T, "", ResultMode.Normal, simple)();
     }
 
     void addMethods(string[] names, string[] aliasNames = null, ResultMode mode = ResultMode.Normal, bool simple = false, T)(T obj) if (is(T == class) && !isCallable!T && (names.length > 0) && ((names.length == aliasNames.length) || (aliasNames == null))) {
@@ -421,6 +421,31 @@ class Service {
     void addInstanceMethods(bool simple, T)(T obj) if (is(T == class) && !isCallable!T) {
         addInstanceMethods!(void, "", ResultMode.Normal, simple)(obj);
     }
+
+    void addMissingFunction(ResultMode mode = ResultMode.Normal, bool simple = false, T)(T func) if (isCallable!T) {
+    }
+
+/*
+    void addMissingFunction(bool simple, T)(T func) if (isCallable!T) {
+        addMissingFunction!(ResultMode.Normal, simple)(func);
+    }
+    
+    void addMissingMethod(string name, ResultMode mode = ResultMode.Normal, bool simple = false, T)(T obj) if (is(T == class) && !isCallable!T) {
+        addMissingFunction!(mode, simple)(mixin("&obj." ~ name));
+    }
+
+    void addMissingMethod(string name, bool simple, T)(T obj) if (is(T == class) && !isCallable!T) {
+        addMissingMethod!(name, ResultMode.Normal, simple)(obj);
+    }
+
+    void addMissingMethod(string name, T, ResultMode mode = ResultMode.Normal, bool simple = false)() if (is(T == class) && !isCallable!T) {
+        addMissingFunction!(mode, simple)(mixin("&T." ~ name));
+    }
+
+    void addMissingMethod(string name, T, bool simple)() if (is(T == class) && !isCallable!T) {
+        addMissingMethod!(name, T, ResultMode.Normal, simple)();
+    }
+*/
 
     alias addFunction add;
     alias addFunctions add;
