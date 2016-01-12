@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader library for D.                           *
  *                                                        *
- * LastModified: Jan 9, 2016                              *
+ * LastModified: Jan 12, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -454,16 +454,18 @@ class Reader : RawReader {
             static if (is(U == Object)) {
                 throw new Exception("cannot convert AssociativeArray to std.Object.");
             }
-            auto count = _bytes.readInt!(int)(TagOpenbrace);
-            ClassManager.register!T(U.stringof);
-            auto unserializer = ClassManager.getUnserializer(typeid(U), this);
-            unserializer.setRef();
-            foreach(int i; 0..count) {
-                auto f = unserialize!(string)();
-                unserializer.setField(f);
+            else {
+                auto count = _bytes.readInt!(int)(TagOpenbrace);
+                ClassManager.register!T(U.stringof);
+                auto unserializer = ClassManager.getUnserializer(typeid(U), this);
+                unserializer.setRef();
+                foreach(int i; 0..count) {
+                    auto f = unserialize!(string)();
+                    unserializer.setField(f);
+                }
+                _bytes.skip(1);
+                return cast(T)(unserializer.get().get!U);
             }
-            _bytes.skip(1);
-            return cast(T)(unserializer.get().get!U);
         }
         T readObject(T)(char tag) if (is(T == struct) || is(T == class)) {
             switch(tag) {
