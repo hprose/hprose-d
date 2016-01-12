@@ -152,7 +152,6 @@ class Service {
     }
 
     void addFunction(string name, ResultMode mode = ResultMode.Normal, bool simple = false, T)(T func) if (isCallable!T) {
-        writeln(name);
         _remoteMethods[toLower(name)] = delegate(Reader reader, BytesIO output, Context context) {
             alias returnType = ReturnType!T;
             alias paramsType = Parameters!T;
