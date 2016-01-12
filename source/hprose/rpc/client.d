@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client library for D.                           *
  *                                                        *
- * LastModified: Jan 10, 2016                             *
+ * LastModified: Jan 12, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -58,6 +58,7 @@ private {
                 alias paramIds = ParameterIdentifierTuple!(mm);
                 alias paramValues = ParameterDefaultValueTuple!(mm);
                 alias returntype = ReturnType!(mm);
+                alias variadic = variadicFunctionStyle!(mm);
                 code ~= returntype.stringof ~ " " ~ m ~ "(";
                 bool byref = false;
                 foreach(i, p; paramTypes) {
@@ -76,6 +77,9 @@ private {
                     static if (!is(paramValues[i] == void)) {
                         code ~= " = " ~ paramValues[i].stringof;
                     }
+                }
+                static if (variadic == Variadic.typesafe) {
+                    code ~= "...";
                 }
                 code ~= ") {\n";
                 static if (is(returntype == void)) {
