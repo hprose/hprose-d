@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service library for D.                          *
  *                                                        *
- * LastModified: Jan 5, 2016                              *
+ * LastModified: Jan 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -164,12 +164,21 @@ class Service {
                 }
             }
 
+            static if (is(paramsType[$ - 1] : Context)) {
+                args[$ - 1] = cast(paramsType[$ - 1])context;
+            }
+
             BytesIO input = reader.stream;
             char tag = input.current;
             bool byRef = false;
             if (tag == TagList) {
                 reader.reset();
-                reader.readTuple!(paramsType)(args.expand);
+                static if (is(paramsType[$ - 1] : Context)) {
+                    reader.readTuple(args[0 .. $ - 1]);
+                }
+                else {
+                    reader.readTuple(args.expand);
+                }
             }
             tag = input.read();
             if (tag == TagTrue) {
@@ -204,6 +213,18 @@ class Service {
                 }
                 else {
                     writer.serialize(result);
+                }
+                static if ((paramsType.length > 1) || (paramsType.length == 1) && is(paramsType[$ - 1] : Context)) {
+                    if (byRef) {
+                        output.write(TagArgument);
+                        writer.reset();
+                        static if (is(paramsType[$ - 1] : Context)) {
+                             writer.writeTuple(args[0 .. $ - 1]);
+                        }
+                        else {
+                            writer.writeTuple(args.expand);
+                        }
+                    }
                 }
             }
             return tag;

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http service library for D.                     *
  *                                                        *
- * LastModified: Jan 12, 2016                             *
+ * LastModified: Jan 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -173,6 +173,13 @@ unittest {
         return "goodbye " ~ name ~ "!";
     }
 
+    int inc(ref int n, HttpContext context) {
+        auto req = context.request;
+        auto res = context.response;
+        n++;
+        return n;
+    }
+
     class BaseTest {
         int add(int a, int b) {
             return a + b;
@@ -202,11 +209,12 @@ unittest {
     // Server
     HttpServer server = new HttpServer();
     server.add!("hello")(&hello);
-    server.add!(["goodbye"])(&goodbye);
+    server.add!(["goodbye", "inc"])(&goodbye, &inc);
     server.add!(["add", "sub", "sum"])(test);
     server.addMethods!(Test, "test")();
     server.settings.bindAddresses = ["127.0.0.1"];
     server.settings.port = 4444;
+    server.settings.sessionStore = new MemorySessionStore();
     server.start();
 
     // Client
@@ -216,6 +224,7 @@ unittest {
         int add(int a, int b);
         int sub(int a, int b = 3);
         int sum(int[] nums...);
+        int inc(ref int n);
         string[] test();
         Variant[string] test2();
     }
@@ -242,6 +251,10 @@ unittest {
     assert(proxy.add(1, 2) == 3);
     assert(proxy.sub(1, 2) == -1);
     assert(proxy.sum(1, 2, 3) == 6);
+    int n = 0;
+    writeln(proxy.inc(n));
+    writeln(proxy.inc(n));
+    writeln(proxy.inc(n));
     assert(proxy2.test() == ["Tom", "Jerry"]);
     assert(proxy2.test2() == ["name": Variant("张三"), "age": Variant(18)]);
 

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client library for D.                           *
  *                                                        *
- * LastModified: Jan 12, 2016                             *
+ * LastModified: Jan 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -65,8 +65,16 @@ private {
                     static if (i > 0) {
                         code ~= ", ";
                     }
-                    static if (paramStors[i] == STC.out_ || paramStors[i] == STC.ref_) {
+                    static if (paramStors[i] == STC.out_ || paramStors[i] == STC.ref_ || paramStors[i] == STC.return_) {
                         byref = true;
+                    }
+                    final switch (paramStors[i]) {
+                        case STC.none: break;
+                        case STC.scope_: code ~= "scope "; break;
+                        case STC.out_: code ~= "out "; break;
+                        case STC.ref_: code ~= "ref "; break;
+                        case STC.lazy_: code ~= "lazy "; break;
+                        case STC.return_: code ~= "return ref "; break;
                     }
                     static if (paramIds[i] != "") {
                         code ~= p.stringof ~ " " ~ paramIds[i];
