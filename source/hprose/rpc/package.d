@@ -13,7 +13,7 @@
  *                                                        *
  * hprose RPC for D.                                      *
  *                                                        *
- * LastModified: Mar 3, 2015                              *
+ * LastModified: Jan 12, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,3 +25,6 @@ public import hprose.rpc.common;
 public import hprose.rpc.context;
 public import hprose.rpc.filter;
 public import hprose.rpc.httpclient;
+public import hprose.rpc.httpcontext;
+public import hprose.rpc.httpservice;
+public import hprose.rpc.service;
