@@ -13,7 +13,7 @@
  *                                                        *
  * hprose bytes io library for D.                         *
  *                                                        *
- * LastModified: Jan 10, 2016                             *
+ * LastModified: Jan 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -45,14 +45,6 @@ class BytesIO {
         }
         immutable(ubyte)[] buffer() {
             return cast(immutable(ubyte)[])_buffer;
-        }
-        char current() {
-            if (size > _pos) {
-                return _buffer[_pos];
-            }
-            else {
-                throw new Exception("no byte found in stream");
-            }
         }
     }
 
