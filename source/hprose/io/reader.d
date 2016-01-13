@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader library for D.                           *
  *                                                        *
- * LastModified: Jan 12, 2016                             *
+ * LastModified: Jan 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -805,9 +805,7 @@ class Reader : RawReader {
     T readObject(T)() if (is(T == struct) || is(T == class)) {
         return readObject!T(_bytes.read());
     }
-    void readTuple(T...)(ref T args) {
-        char tag = _bytes.read();
-        enforce(tag == TagList, unexpectedTag(tag));
+    void readTupleWithoutTag(T...)(ref T args) {
         int len = _bytes.readInt(TagOpenbrace);
         int n = min(len, args.length);
         setRef(null);
@@ -824,6 +822,11 @@ class Reader : RawReader {
             }
         }
         _bytes.skip(1);
+    }
+    void readTuple(T...)(ref T args) {
+        char tag = _bytes.read();
+        enforce(tag == TagList, unexpectedTag(tag));
+        readTupleWithoutTag(args);
     }
 }
 
