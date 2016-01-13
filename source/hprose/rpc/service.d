@@ -31,7 +31,6 @@ import std.traits;
 import std.typecons;
 import std.variant;
 
-alias RemoteMethod = char delegate(Reader reader, BytesIO output, Context context);
 alias OnBeforeInvoke = void delegate(string name, Variant[] args, bool byRef, Context context);
 alias OnAfterInvoke = void delegate(string name, Variant[] args, bool byRef, Variant result, Context context);
 alias OnSendError = Exception delegate(Exception e, Context context);
@@ -39,6 +38,7 @@ alias OnSendError = Exception delegate(Exception e, Context context);
 class Service {
 
     private {
+        alias RemoteMethod = char delegate(string, Reader, BytesIO, Context);
         Filter[] _filters;
         RemoteMethod[string] _remoteMethods;
         string[] _allNames;
@@ -110,10 +110,10 @@ class Service {
                 string name = reader.readString!string();
                 string aliasName = toLower(name);
                 if (aliasName in _remoteMethods) {
-                    tag = _remoteMethods[aliasName](reader, output, context);
+                    tag = _remoteMethods[aliasName](name, reader, output, context);
                 }
                 else if ("*" in _remoteMethods) {
-                    tag = _remoteMethods["*"](reader, output, context);
+                    tag = _remoteMethods["*"](name, reader, output, context);
                 }
                 else {
                     throw new Exception("Can't find this method " ~ name);
@@ -151,8 +151,8 @@ class Service {
         }
     }
 
-    void addFunction(string name, ResultMode mode = ResultMode.Normal, bool simple = false, T)(T func) if (isCallable!T) {
-        _remoteMethods[toLower(name)] = delegate(Reader reader, BytesIO output, Context context) {
+    void addFunction(string name, ResultMode mode = ResultMode.Normal, bool simple = false, T)(T func) if (isCallable!T && (name != "*" || is(ReturnType!T == Variant) && Parameters!T.length >= 2 && is(Parameters!T[0] == string) && is(Parameters!T[1] == Variant[]))) {
+        _remoteMethods[toLower(name)] = delegate(string aliasName, Reader reader, BytesIO output, Context context) {
             alias returnType = ReturnType!T;
             alias paramsType = Parameters!T;
             alias defaultArgs = ParameterDefaults!T;
@@ -168,25 +168,37 @@ class Service {
                 args[$ - 1] = cast(paramsType[$ - 1])context;
             }
 
+            static if (name == "*") {
+                args[0] = aliasName;
+            }
+
             BytesIO input = reader.stream;
-            char tag = input.current;
+            char tag = input.read();
             bool byRef = false;
             if (tag == TagList) {
                 reader.reset();
-                static if (is(paramsType[$ - 1] : Context)) {
-                    reader.readTuple(args[0 .. $ - 1]);
+                static if (name == "*") {
+                    args[1] = reader.readArrayWithoutTag!(Variant[])();
+                }
+                else static if (is(paramsType[$ - 1] : Context)) {
+                    reader.readTupleWithoutTag(args[0 .. $ - 1]);
                 }
                 else {
-                    reader.readTuple(args.expand);
+                    reader.readTupleWithoutTag(args.expand);
+                }
+                tag = input.read();
+                if (tag == TagTrue) {
+                    byRef = true;
+                    tag = input.read();
                 }
             }
-            tag = input.read();
-            if (tag == TagTrue) {
-                byRef = true;
-                tag = input.read();
-            }
             if (onBeforeInvoke !is null) {
-                onBeforeInvoke(name, variantArray(args.expand), byRef, context);
+                static if (name == "*") {
+                    onBeforeInvoke(aliasName, args[1], byRef, context);
+                }
+                else {
+                    onBeforeInvoke(aliasName, variantArray(args.expand), byRef, context);
+                }
             }
             static if (is(returnType == void)) {
                 Variant result = null;
@@ -196,25 +208,52 @@ class Service {
                 returnType result = func(args.expand);
             }
             if (onAfterInvoke !is null) {
-                onAfterInvoke(name, variantArray(args.expand), byRef, cast(Variant)result, context);
+                static if (name == "*") {
+                    onAfterInvoke(aliasName, args[1], byRef, result, context);
+                }
+                else {
+                    onAfterInvoke(aliasName, variantArray(args.expand), byRef, cast(Variant)result, context);
+                }
             }
             static if (mode == ResultMode.RawWithEndTag) {
-                output.write(cast(ubyte[])result);
+                static if (is(returnType == Variant)) {
+                    output.write(result.get!(ubyte[]));
+                }
+                else {
+                    output.write(cast(ubyte[])result);
+                }
                 return 0;
             }
             else static if (mode == ResultMode.Raw) {
-                output.write(cast(ubyte[])result);
+                static if (is(returnType == Variant)) {
+                    output.write(result.get!(ubyte[]));
+                }
+                else {
+                    output.write(cast(ubyte[])result);
+                }
             }
             else {
                 output.write(TagResult);
                 Writer writer = new Writer(output, simple);
                 static if (mode == ResultMode.Serialized) {
-                    output.write(cast(ubyte[])result);
+                    static if (is(returnType == Variant)) {
+                        output.write(result.get!(ubyte[]));
+                    }
+                    else {
+                        output.write(cast(ubyte[])result);
+                    }
                 }
                 else {
                     writer.serialize(result);
                 }
-                static if ((paramsType.length > 1) || (paramsType.length == 1) && is(paramsType[$ - 1] : Context)) {
+                static if (name == "*") {
+                    if (byRef) {
+                        output.write(TagArgument);
+                        writer.reset();
+                        writer.writeArray(args[1]);
+                    }
+                }
+                else static if ((paramsType.length > 1) || (paramsType.length == 1) && is(paramsType[$ - 1] : Context)) {
                     if (byRef) {
                         output.write(TagArgument);
                         writer.reset();
@@ -422,11 +461,11 @@ class Service {
         addInstanceMethods!(void, "", ResultMode.Normal, simple)(obj);
     }
 
-    void addMissingFunction(ResultMode mode = ResultMode.Normal, bool simple = false, T)(T func) if (isCallable!T) {
+    void addMissingFunction(ResultMode mode = ResultMode.Normal, bool simple = false, T)(T func) if (isCallable!T && is(ReturnType!T == Variant) && Parameters!T.length >=2 && is(Parameters!T[0] == string) && is(Parameters!T[1] == Variant[])) {
+        addFunction!("*", mode, simple)(func);
     }
 
-/*
-    void addMissingFunction(bool simple, T)(T func) if (isCallable!T) {
+    void addMissingFunction(bool simple, T)(T func) if (isCallable!T && is(ReturnType!T == Variant) && Parameters!T.length >=2 && is(Parameters!T[0] == string) && is(Parameters!T[1] == Variant[])) {
         addMissingFunction!(ResultMode.Normal, simple)(func);
     }
     
@@ -445,7 +484,6 @@ class Service {
     void addMissingMethod(string name, T, bool simple)() if (is(T == class) && !isCallable!T) {
         addMissingMethod!(name, T, ResultMode.Normal, simple)();
     }
-*/
 
     alias addFunction add;
     alias addFunctions add;

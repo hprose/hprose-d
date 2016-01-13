@@ -173,6 +173,18 @@ unittest {
         return "goodbye " ~ name ~ "!";
     }
 
+    Variant missfunc(string name, Variant[] args) {
+        if (name == "mul") {
+            return args[0] * args[1];
+        }
+        else if (name == "div") {
+            return args[0] / args[1];
+        }
+        else {
+            return Variant(null);
+        }
+    }
+
     int inc(ref int n, HttpContext context) {
         auto req = context.request;
         auto res = context.response;
@@ -213,6 +225,7 @@ unittest {
     server.add!(["add", "sub", "sum"])(test);
     server.add!("test", Test)(); // add Test.test method to the server
     server.add!(Test, "test")(); // add all static methods on Test with prefix "test" to the server
+    server.addMissingFunction(&missfunc);
     server.settings.bindAddresses = ["127.0.0.1"];
     server.settings.port = 4444;
     server.settings.sessionStore = new MemorySessionStore();
@@ -224,6 +237,8 @@ unittest {
         string goodbye(string name);
         int add(int a, int b);
         int sub(int a, int b = 3);
+        int mul(int a, int b);
+        int div(int a, int b);
         int sum(int[] nums...);
         int inc(ref int n);
         string[] test();
@@ -251,12 +266,15 @@ unittest {
     assert(proxy.goodbye("world") == "goodbye world!");
     assert(proxy.add(1, 2) == 3);
     assert(proxy.sub(1, 2) == -1);
+    assert(proxy.mul(1, 2) == 2);
+    assert(proxy.div(2, 2) == 1);
     assert(proxy.sum(1, 2, 3) == 6);
     assert(proxy.test() == ["Tom", "Jerry"]);
     int n = 0;
-    writeln(proxy.inc(n));
-    writeln(proxy.inc(n));
-    writeln(proxy.inc(n));
+    assert(proxy.inc(n) == 1);
+    assert(proxy.inc(n) == 2);
+    assert(proxy.inc(n) == 3);
+    assert(n == 3);
     assert(proxy2.test() == ["Tom", "Jerry"]);
     assert(proxy2.test2() == ["name": Variant("张三"), "age": Variant(18)]);
 
