@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http service library for D.                     *
  *                                                        *
- * LastModified: Jan 13, 2016                             *
+ * LastModified: Jan 31, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -226,6 +226,22 @@ unittest {
     server.add!("test", Test)(); // add Test.test method to the server
     server.add!(Test, "test")(); // add all static methods on Test with prefix "test" to the server
     server.addMissingFunction(&missfunc);
+    server.use(delegate Variant(string name, ref Variant[] args, Context context, NextInvokeHandler next) {
+            writeln(name);
+            writeln(args);
+            Variant result = next(name, args, context);
+            writeln(result);
+            return result;
+        }, delegate Variant(string name, ref Variant[] args, Context context, NextInvokeHandler next) {
+            writeln(std.datetime.Clock.currStdTime());
+            Variant result = next(name, args, context);
+            writeln(std.datetime.Clock.currStdTime());
+            return result;
+        }, delegate Variant(string name, ref Variant[] args, Context context, NextInvokeHandler next) {
+            Variant result = next(name, args, context);
+            writeln();
+            return result;
+        });
     server.settings.bindAddresses = ["127.0.0.1"];
     server.settings.port = 4444;
     server.settings.sessionStore = new MemorySessionStore();
@@ -233,7 +249,7 @@ unittest {
 
     // Client
     interface Hello {
-        string hello(string name);
+        @Simple() string hello(string name);
         string goodbye(string name);
         int add(int a, int b);
         int sub(int a, int b = 3);

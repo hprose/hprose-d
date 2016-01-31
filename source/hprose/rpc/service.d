@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service library for D.                          *
  *                                                        *
- * LastModified: Jan 13, 2016                             *
+ * LastModified: Jan 31, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -35,6 +35,9 @@ alias OnBeforeInvoke = void delegate(string name, Variant[] args, bool byRef, Co
 alias OnAfterInvoke = void delegate(string name, Variant[] args, bool byRef, Variant result, Context context);
 alias OnSendError = Exception delegate(Exception e, Context context);
 
+alias NextInvokeHandler = Variant delegate(string name, ref Variant[] args, Context context);
+alias InvokeHandler = Variant delegate(string name, ref Variant[] args, Context context, NextInvokeHandler next);
+
 class Service {
 
     private {
@@ -51,6 +54,7 @@ class Service {
     OnBeforeInvoke onBeforeInvoke = null;
     OnAfterInvoke onAfterInvoke = null;
     OnSendError onSendError = null;
+    InvokeHandler[] invokeHandlers = [];
 
     @property ref filters() {
         return this._filters;
@@ -202,11 +206,63 @@ class Service {
             }
             static if (is(returnType == void)) {
                 Variant result = null;
-                func(args.expand);
             }
             else {
-                returnType result = func(args.expand);
+                returnType result;
             }
+            if (invokeHandlers.length == 0) {
+                static if (is(returnType == void)) {
+                    func(args.expand);
+                }
+                else {
+                    result = func(args.expand);
+                }
+            }
+            else {
+                NextInvokeHandler next = delegate Variant(string name, ref Variant[] args, Context context) {
+                    Tuple!(paramsType) _args;
+                    foreach (i, ref arg; _args) {
+                        arg = args[i].get!(paramsType[i]);
+                    }
+                    Variant result;
+                    static if (is(returnType == void)) {
+                        func(_args.expand);
+                        result = null;
+                    }
+                    else {
+                        result = cast(Variant)(func(_args.expand));
+                    }
+                    foreach (i, ref arg; _args) {
+                        args[i] = cast(Variant)arg;
+                    }
+                    return result;
+                };
+
+                foreach (handler; invokeHandlers) {
+                    next = (delegate(NextInvokeHandler next, InvokeHandler handler) {
+                        return delegate Variant(string name, ref Variant[] args, Context context) {
+                            return handler(name, args, context, next);
+                        };
+                        })(next, handler);
+                }
+
+                Variant[] _args = variantArray(args.expand);
+
+                static if (is(returnType == void)) {
+                    next(name, _args, context);
+                }
+                else static if (is(returnType == Variant)) {
+                    result = next(name, _args, context);
+                }
+                else {
+                    result = next(name, _args, context).get!(returnType);
+                }
+
+                foreach (i, ref arg; args) {
+                    arg = _args[i].get!(paramsType[i]);
+                }
+            }
+
             if (onAfterInvoke !is null) {
                 static if (name == "*") {
                     onAfterInvoke(aliasName, args[1], byRef, result, context);
@@ -489,4 +545,10 @@ class Service {
     alias addFunctions add;
     alias addMethod add;
     alias addMethods add;
+
+    void use(InvokeHandler[] handler...) {
+        if (handler !is null) {
+            invokeHandlers ~= handler;
+        }
+    }
 }
