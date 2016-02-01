@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http service library for D.                     *
  *                                                        *
- * LastModified: Jan 31, 2016                             *
+ * LastModified: Feb 1, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -78,7 +78,7 @@ class HttpService: Service {
         switch(req.method) {
             case HTTPMethod.GET: {
                 if (get) {
-                    res.writeBody(doFunctionList(context));
+                    res.writeBody(doFunctionList());
                 }
                 else {
                     res.statusCode = HTTPStatus.forbidden;
@@ -237,10 +237,23 @@ unittest {
             Variant result = next(name, args, context);
             writeln(std.datetime.Clock.currStdTime());
             return result;
-        }, delegate Variant(string name, ref Variant[] args, Context context, NextInvokeHandler next) {
-            Variant result = next(name, args, context);
+        });
+    server.use!"beforeFilter"(delegate ubyte[](ubyte[] request, Context context, NextIOHandler next) {
+            writeln("beforeFilter");
+            writeln(cast(string)request);
+            ubyte[] response = next(request, context);
+            writeln("beforeFilter");
+            writeln(cast(string)response);
             writeln();
-            return result;
+            return response;
+        });
+    server.use!"afterFilter"(delegate ubyte[](ubyte[] request, Context context, NextIOHandler next) {
+            writeln("afterFilter");
+            writeln(cast(string)request);
+            ubyte[] response = next(request, context);
+            writeln("afterFilter");
+            writeln(cast(string)response);
+            return response;
         });
     server.settings.bindAddresses = ["127.0.0.1"];
     server.settings.port = 4444;

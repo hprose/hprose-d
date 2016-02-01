@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service library for D.                          *
  *                                                        *
- * LastModified: Jan 31, 2016                             *
+ * LastModified: Feb 1, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -38,6 +38,9 @@ alias OnSendError = Exception delegate(Exception e, Context context);
 alias NextInvokeHandler = Variant delegate(string name, ref Variant[] args, Context context);
 alias InvokeHandler = Variant delegate(string name, ref Variant[] args, Context context, NextInvokeHandler next);
 
+alias NextIOHandler = ubyte[] delegate(ubyte[] request, Context context);
+alias IOHandler = ubyte[] delegate(ubyte[] request, Context context, NextIOHandler next);
+
 class Service {
 
     private {
@@ -55,6 +58,10 @@ class Service {
     OnAfterInvoke onAfterInvoke = null;
     OnSendError onSendError = null;
     InvokeHandler[] invokeHandlers = [];
+    IOHandler[] beforeFilterHandlers = [];
+    IOHandler[] afterFilterHandlers = [];
+    NextIOHandler beforeFilterHandler;
+    NextIOHandler afterFilterHandler;
 
     @property ref filters() {
         return this._filters;
@@ -62,6 +69,8 @@ class Service {
 
     this() {
         this._filters = [];
+        beforeFilterHandler = &beforeFilter;
+        afterFilterHandler = &afterFilter;
     }
 
     private {
@@ -98,10 +107,6 @@ class Service {
             stream.write(TagEnd);
             return cast(ubyte[])stream.buffer;
         }
-
-        ubyte[] responseEnd(BytesIO data, Context context) {
-            return inputFilter(cast(ubyte[])data.buffer, context);
-        }
     }
 
     protected {
@@ -129,29 +134,45 @@ class Service {
             if (tag == TagEnd) {
                 output.write(TagEnd);
             }
-            return responseEnd(output, context);
+            return cast(ubyte[])output.buffer;
         }
-        ubyte[] doFunctionList(Context context) {
+
+        ubyte[] doFunctionList() {
             BytesIO output = new BytesIO();
             Writer writer = new Writer(output, true);
             output.write(TagFunctions);
             writer.writeList(_allNames);
             output.write(TagEnd);
-            return responseEnd(output, context);
+            return cast(ubyte[])output.buffer;
         }
-        ubyte[] handle(ubyte[] data, Context context) {
+
+        ubyte[] afterFilter(ubyte[] data, Context context) {
             try {
-                data = inputFilter(data, context);
                 BytesIO input = new BytesIO(data);
                 switch (input.read()) {
                     case TagCall: return doInvoke(input, context);
-                    case TagEnd: return doFunctionList(context);
+                    case TagEnd: return doFunctionList();
                     default: throw new Exception("Wrong Request: \r\n" ~ input.toString());
                 }
             }
             catch (Exception e) {
                 return sendError(e, context);
             }
+        }
+
+        ubyte[] beforeFilter(ubyte[] data, Context context) {
+            try {
+                data = inputFilter(data, context);
+                data = afterFilterHandler(data, context);
+                return outputFilter(data, context);
+            }
+            catch (Exception e) {
+                return outputFilter(sendError(e, context), context);
+            }
+        }
+
+        ubyte[] handle(ubyte[] data, Context context) {
+            return beforeFilterHandler(data, context);
         }
     }
 
@@ -549,6 +570,21 @@ class Service {
     void use(InvokeHandler[] handler...) {
         if (handler !is null) {
             invokeHandlers ~= handler;
+        }
+    }
+    void use(string when)(IOHandler[] handler...) if ((when == "beforeFilter") || (when == "afterFilter")) {
+        if (handler !is null) {
+            mixin(
+                when ~ "Handlers ~= handler;\r\n" ~
+                when ~ "Handler = &" ~ when ~ ";\r\n" ~
+                "foreach (h; " ~ when ~ "Handlers) {\r\n" ~
+                "    " ~ when ~ "Handler = (delegate(NextIOHandler next, IOHandler handler) {\r\n" ~
+                "        return delegate ubyte[](ubyte[] request, Context context) {\r\n" ~
+                "            return handler(request, context, next);\r\n" ~
+                "        };\r\n" ~
+                "    })(" ~ when ~ "Handler, h);\r\n" ~
+                "}\r\n"
+            );
         }
     }
 }
