@@ -215,11 +215,11 @@ class Writer {
                     writeString(toUTF8(buf, value));
                 }
                 else {
-                    writeUtf8Char(cast(wchar)value);
+                    writeUTF8Char(cast(wchar)value);
                 }
             }
             else {
-                writeUtf8Char(cast(wchar)value);
+                writeUTF8Char(cast(wchar)value);
             }
         }
         else static if (isStaticArray!U) {
@@ -373,7 +373,7 @@ class Writer {
     void writeBool(bool value) {
         _bytes.write(value ? TagTrue : TagFalse);
     }
-    void writeUtf8Char(wchar value) {
+    void writeUTF8Char(wchar value) {
         _bytes.write(TagUTF8Char).write(toUTF8([value]));
     }
     void writeDateTime(DateTime value) {
