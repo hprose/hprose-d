@@ -13,7 +13,7 @@
  *                                                        *
  * hprose bytes io library for D.                         *
  *                                                        *
- * LastModified: Jan 13, 2016                             *
+ * LastModified: Mar 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -93,6 +93,14 @@ class BytesIO {
         _pos += count + 1;
         return bytes;
     }
+    char[] readBytes(T...)(T tags) {
+        long count = countUntil(_buffer[_pos .. $], tags);
+        if (count < 0) return readFull();
+        count++;
+        char[] bytes = _buffer[_pos .. _pos + count];
+        _pos += count;
+        return bytes;
+    }
     char skipUntil(T...)(T tags) {
         auto count = countUntil(_buffer[_pos .. $], tags);
         if (count < 0) throw new Exception("does not find tags in stream");
@@ -109,7 +117,7 @@ class BytesIO {
             case 14: _pos += 2; break;
             default: throw new Exception("bad utf-8 encoding");
         }
-        if (_pos > size) throw new Exception("bad utf-8 encoding"); 
+        if (_pos > size) throw new Exception("bad utf-8 encoding");
         return cast(string)_buffer[pos .. _pos];
     }
     T readString(T = string)(int wlen) if (isSomeString!T) {
@@ -124,7 +132,7 @@ class BytesIO {
                 default: throw new Exception("bad utf-8 encoding");
             }
         }
-        if (_pos > size) throw new Exception("bad utf-8 encoding"); 
+        if (_pos > size) throw new Exception("bad utf-8 encoding");
         return cast(T)_buffer[pos .. _pos];
     }
     T readInt(T = int)(char tag) if (isSigned!T) {

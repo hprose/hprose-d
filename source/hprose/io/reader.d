@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader library for D.                           *
  *                                                        *
- * LastModified: Jan 13, 2016                             *
+ * LastModified: Mar 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -83,10 +83,10 @@ class RawReader {
             return to!int(str);
         }
         void readNumberRaw(BytesIO bytes) {
-            bytes.write(_bytes.readUntil(TagSemicolon)).write(TagSemicolon);
+            bytes.write(_bytes.readBytes(TagSemicolon));
         }
         void readDateTimeRaw(BytesIO bytes) {
-            bytes.write(_bytes.readUntil(TagSemicolon, TagUTC));
+            bytes.write(_bytes.readBytes(TagSemicolon, TagUTC));
         }
         void readUTF8CharRaw(BytesIO bytes) {
             bytes.write(_bytes.readUTF8Char());
@@ -105,7 +105,7 @@ class RawReader {
             bytes.write(_bytes.read(38));
         }
         void readComplexRaw(BytesIO bytes) {
-            bytes.write(_bytes.readUntil(TagOpenbrace)).write(TagOpenbrace);
+            bytes.write(_bytes.readBytes(TagOpenbrace));
             ubyte tag;
             while ((tag = _bytes.read()) != TagClosebrace) {
                 readRaw(bytes, tag);
@@ -1028,7 +1028,7 @@ private {
         this(int a) { this.a = a; }
         void hello() {}
     };
-    
+
     struct MyStruct {
         int a;
         static const byte b;
@@ -1036,6 +1036,12 @@ private {
         this(int a) { this.a = a; }
         void hello() {}
     }
+}
+
+unittest {
+    BytesIO bytes = new BytesIO("D19801201T174854.802400;");
+    RawReader reader = new RawReader(bytes);
+    assert(reader.readRaw().toString() == "D19801201T174854.802400;");
 }
 
 unittest {
