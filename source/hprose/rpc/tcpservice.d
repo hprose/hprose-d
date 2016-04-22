@@ -13,7 +13,7 @@
  *                                                        *
  * hprose tcp service library for D.                      *
  *                                                        *
- * LastModified: Feb 2, 2016                              *
+ * LastModified: Apr 22, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -61,15 +61,16 @@ class TcpService: Service {
                     dataLen[1] = cast(ubyte)((dataLength >> 16) & 0xff);
                     dataLen[2] = cast(ubyte)((dataLength >> 8) & 0xff);
                     dataLen[3] = cast(ubyte)((dataLength) & 0xff);
+                    conn.write(dataLen);
+                    conn.write(id);
                 }
                 else {
                     dataLen[0] = cast(ubyte)((dataLength >> 24) & 0x7f);
                     dataLen[1] = cast(ubyte)((dataLength >> 16) & 0xff);
                     dataLen[2] = cast(ubyte)((dataLength >> 8) & 0xff);
                     dataLen[3] = cast(ubyte)((dataLength) & 0xff);
+                    conn.write(dataLen);
                 }
-                conn.write(dataLen);
-                conn.write(id);
                 conn.write(data);
             }
             catch(Exception e) {
@@ -161,7 +162,7 @@ unittest {
             writeln(std.datetime.Clock.currStdTime());
             return result;
         });
-    server.use!"beforeFilter"(delegate ubyte[](ubyte[] request, Context context, NextIOHandler next) {
+    server.use!"beforeFilter"(delegate ubyte[](ubyte[] request, Context context, NextFilterHandler next) {
             writeln("beforeFilter");
             writeln(cast(string)request);
             ubyte[] response = next(request, context);
@@ -170,7 +171,7 @@ unittest {
             writeln();
             return response;
         });
-    server.use!"afterFilter"(delegate ubyte[](ubyte[] request, Context context, NextIOHandler next) {
+    server.use!"afterFilter"(delegate ubyte[](ubyte[] request, Context context, NextFilterHandler next) {
             writeln("afterFilter");
             writeln(cast(string)request);
             ubyte[] response = next(request, context);

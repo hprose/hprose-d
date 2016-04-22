@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http service library for D.                     *
  *                                                        *
- * LastModified: Feb 1, 2016                              *
+ * LastModified: Apr 22, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -238,7 +238,7 @@ unittest {
             writeln(std.datetime.Clock.currStdTime());
             return result;
         });
-    server.use!"beforeFilter"(delegate ubyte[](ubyte[] request, Context context, NextIOHandler next) {
+    server.use!"beforeFilter"(delegate ubyte[](ubyte[] request, Context context, NextFilterHandler next) {
             writeln("beforeFilter");
             writeln(cast(string)request);
             ubyte[] response = next(request, context);
@@ -247,7 +247,7 @@ unittest {
             writeln();
             return response;
         });
-    server.use!"afterFilter"(delegate ubyte[](ubyte[] request, Context context, NextIOHandler next) {
+    server.use!"afterFilter"(delegate ubyte[](ubyte[] request, Context context, NextFilterHandler next) {
             writeln("afterFilter");
             writeln(cast(string)request);
             ubyte[] response = next(request, context);

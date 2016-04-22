@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service library for D.                          *
  *                                                        *
- * LastModified: Feb 1, 2016                              *
+ * LastModified: Apr 22, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -35,12 +35,6 @@ alias OnBeforeInvoke = void delegate(string name, Variant[] args, bool byRef, Co
 alias OnAfterInvoke = void delegate(string name, Variant[] args, bool byRef, Variant result, Context context);
 alias OnSendError = Exception delegate(Exception e, Context context);
 
-alias NextInvokeHandler = Variant delegate(string name, ref Variant[] args, Context context);
-alias InvokeHandler = Variant delegate(string name, ref Variant[] args, Context context, NextInvokeHandler next);
-
-alias NextIOHandler = ubyte[] delegate(ubyte[] request, Context context);
-alias IOHandler = ubyte[] delegate(ubyte[] request, Context context, NextIOHandler next);
-
 class Service {
 
     private {
@@ -58,10 +52,10 @@ class Service {
     OnAfterInvoke onAfterInvoke = null;
     OnSendError onSendError = null;
     InvokeHandler[] invokeHandlers = [];
-    IOHandler[] beforeFilterHandlers = [];
-    IOHandler[] afterFilterHandlers = [];
-    NextIOHandler beforeFilterHandler;
-    NextIOHandler afterFilterHandler;
+    FilterHandler[] beforeFilterHandlers = [];
+    FilterHandler[] afterFilterHandlers = [];
+    NextFilterHandler beforeFilterHandler;
+    NextFilterHandler afterFilterHandler;
 
     @property ref filters() {
         return this._filters;
@@ -572,13 +566,13 @@ class Service {
             invokeHandlers ~= handler;
         }
     }
-    void use(string when)(IOHandler[] handler...) if ((when == "beforeFilter") || (when == "afterFilter")) {
+    void use(string when)(FilterHandler[] handler...) if ((when == "beforeFilter") || (when == "afterFilter")) {
         if (handler !is null) {
             mixin(
                 when ~ "Handlers ~= handler;\r\n" ~
                 when ~ "Handler = &" ~ when ~ ";\r\n" ~
                 "foreach (h; " ~ when ~ "Handlers) {\r\n" ~
-                "    " ~ when ~ "Handler = (delegate(NextIOHandler next, IOHandler handler) {\r\n" ~
+                "    " ~ when ~ "Handler = (delegate(NextFilterHandler next, FilterHandler handler) {\r\n" ~
                 "        return delegate ubyte[](ubyte[] request, Context context) {\r\n" ~
                 "            return handler(request, context, next);\r\n" ~
                 "        };\r\n" ~

@@ -13,17 +13,25 @@
  *                                                        *
  * hprose common library for D.                           *
  *                                                        *
- * LastModified: Mar 3, 2015                              *
+ * LastModified: Apr 22, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
 module hprose.rpc.common;
 
+import hprose.rpc.context;
 import std.stdio;
+import std.variant;
 import std.traits;
 import std.typecons;
 import std.typetuple;
+
+alias NextInvokeHandler = Variant delegate(string name, ref Variant[] args, Context context);
+alias InvokeHandler = Variant delegate(string name, ref Variant[] args, Context context, NextInvokeHandler next);
+
+alias NextFilterHandler = ubyte[] delegate(ubyte[] request, Context context);
+alias FilterHandler = ubyte[] delegate(ubyte[] request, Context context, NextFilterHandler next);
 
 struct MethodName {
     string value;
