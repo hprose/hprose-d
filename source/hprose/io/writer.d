@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer library for D.                           *
  *                                                        *
- * LastModified: Jan 9, 2016                              *
+ * LastModified: Aug 3, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -441,7 +441,7 @@ class Writer {
     }
     void writeUUID(UUID value) {
         _refer.set(null);
-        _bytes.write(TagGuid).write(TagQuote).write(value.toString()).write(TagQuote);
+        _bytes.write(TagGuid).write(TagOpenbrace).write(value.toString()).write(TagClosebrace);
     }
     void writeEmpty() {
         _bytes.write(TagEmpty);
@@ -667,11 +667,11 @@ unittest {
 
     bytes.init("");
     rw.serialize(UUID());
-    assert(bytes.toString() == "g\"00000000-0000-0000-0000-000000000000\"");
+    assert(bytes.toString() == "g{00000000-0000-0000-0000-000000000000}");
 
     bytes.init("");
     rw.serialize(dnsNamespace);
-    assert(bytes.toString() == "g\"" ~ dnsNamespace.toString() ~ "\"");
+    assert(bytes.toString() == "g{" ~ dnsNamespace.toString() ~ "}");
 
     bytes.init("");
     rw.reset();
