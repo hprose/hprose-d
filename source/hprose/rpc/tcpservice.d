@@ -13,7 +13,7 @@
  *                                                        *
  * hprose tcp service library for D.                      *
  *                                                        *
- * LastModified: Apr 22, 2016                             *
+ * LastModified: Aug 3, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -90,6 +90,7 @@ unittest {
 //    import hprose.rpc.tcpclient;
     import hprose.rpc.context;
     import hprose.rpc.filter;
+    import std.datetime;
 
     string hello(string name) {
         return "hello " ~ name ~ "!";
@@ -157,9 +158,9 @@ unittest {
             writeln(result);
             return result;
         }, delegate Variant(string name, ref Variant[] args, Context context, NextInvokeHandler next) {
-            writeln(std.datetime.Clock.currStdTime());
+            writeln(Clock.currStdTime());
             Variant result = next(name, args, context);
-            writeln(std.datetime.Clock.currStdTime());
+            writeln(Clock.currStdTime());
             return result;
         });
     server.use!"beforeFilter"(delegate ubyte[](ubyte[] request, Context context, NextFilterHandler next) {
