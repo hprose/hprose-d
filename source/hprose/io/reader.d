@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader library for D.                           *
  *                                                        *
- * LastModified: Mar 11, 2016                             *
+ * LastModified: Aug 3, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -170,14 +170,6 @@ class Reader : RawReader {
             string result = _bytes.readString(_bytes.readInt(TagQuote));
             _bytes.skip(1);
             return result;
-        }
-        void setRef(T)(ref T value) {
-            if (_simple) return;
-            _refer.set(Variant(value));
-        }
-        void setRef(T)(T value) if (is(T == typeof(null))) {
-            if (_simple) return;
-            _refer.set(Variant(null));
         }
         T readRef(T)() {
             static if (is(Unqual!T == Variant)) {
@@ -532,6 +524,16 @@ class Reader : RawReader {
             else {
                 return readObject!T(tag);
             }
+        }
+    }
+    package {
+        void setRef(T)(ref T value) {
+            if (_simple) return;
+            _refer.set(Variant(value));
+        }
+        void setRef(T)(T value) if (is(T == typeof(null))) {
+            if (_simple) return;
+            _refer.set(Variant(null));
         }
     }
 
