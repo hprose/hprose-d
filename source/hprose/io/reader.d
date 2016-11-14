@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader library for D.                           *
  *                                                        *
- * LastModified: Aug 3, 2016                              *
+ * LastModified: Nov 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -235,8 +235,10 @@ class Reader : RawReader {
                 case TagInteger: return cast(T)(readIntegerWithoutTag!int() != 0);
                 case TagLong: return cast(T)(readBigIntWithoutTag!BigInt() != BigInt(0));
                 case TagDouble: return cast(T)(readDoubleWithoutTag!real() != 0);
+                case TagInfinity: readInfinityWithoutTag!real(); return cast(T)(true);
                 case TagNull: return cast(T)(false);
                 case TagEmpty: return cast(T)(false);
+                case TagNaN: return cast(T)(true);
                 case TagTrue: return cast(T)(true);
                 case TagFalse: return cast(T)(false);
                 case TagUTF8Char: return cast(T)(countUntil("\00", readUTF8CharWithoutTag!char()) >= 0);

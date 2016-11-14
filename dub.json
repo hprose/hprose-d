@@ -4,7 +4,7 @@
     "authors":     ["Ma Bingyao"],
     "homepage":    "https://github.com/hprose/hprose-d",
     "license":     "MIT",
-    "copyright":   "Copyright (c) 2014-2015 http://hprose.com",
+    "copyright":   "Copyright (c) 2014-2016 http://hprose.com",
     "targetType":  "library",
 	"dependencies": {
 		"vibe-d": "~>0.7.28"
